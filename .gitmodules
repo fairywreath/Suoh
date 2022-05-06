@@ -1,0 +1,6 @@
+[submodule "Suou/Vendor/type_safe"]
+	path = Suou/Vendor/type_safe
+	url = git@github.com:foonathan/type_safe.git
+[submodule "Suou/Vendor/glfw"]
+	path = Suou/Vendor/glfw
+	url = git@github.com:glfw/glfw.git
