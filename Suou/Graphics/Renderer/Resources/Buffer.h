@@ -10,7 +10,11 @@ STRONG_TYPEDEF(BufferHandle, u32);
 
 struct BufferDescription
 {
+    u64 size = 0;
 
+    // TODO
+    // VmaMemoryUsage
+    // VkBufferUsageFlags
 };
 
 

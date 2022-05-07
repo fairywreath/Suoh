@@ -166,7 +166,8 @@ VKRenderDevice::VKRenderDevice(Window* window) :
     mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
     mInitialized(false),
     mDevice(mInstance, mSurface),
-    mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight())
+    mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()),
+    mBufferHandler(*this)
 {
     init();
 }
@@ -178,6 +179,7 @@ VKRenderDevice::~VKRenderDevice()
 
 void VKRenderDevice::init()
 {
+    initAllocator();
     initCommands();
 }
 
@@ -194,12 +196,28 @@ void VKRenderDevice::initCommands()
     VK_CHECK(vkCreateCommandPool(mDevice.getLogical(), &commandPoolInfo, nullptr, &mCommandPool));
 }
 
+void VKRenderDevice::initAllocator()
+{
+    VmaAllocatorCreateInfo allocatorInfo 
+    {
+        .physicalDevice = mDevice.getPhysical(),
+        .device = mDevice.getLogical(),
+        .instance = mInstance
+    };
+
+    vmaCreateAllocator(&allocatorInfo, &mAllocator);
+}
+
 void VKRenderDevice::destroy()
 {
+    // XXX: use deletion queue?
     auto device = mDevice.getLogical();
 
     vkDestroyCommandPool(device, mCommandPool, nullptr);
 
+    vmaDestroyAllocator(mAllocator);
+
+    mBufferHandler.destroy();
     mSwapchain.destroy();
     mDevice.destroy();
 
@@ -209,6 +227,16 @@ void VKRenderDevice::destroy()
         destroyDebugUtilsMessengerEXT(mInstance ,mDebugMessenger, nullptr);
     }
     vkDestroyInstance(mInstance, nullptr);
+}
+
+BufferHandle VKRenderDevice::createBuffer(const BufferDescription& desc)
+{
+    return mBufferHandler.createBuffer(desc);
+}
+
+void VKRenderDevice::destroyBuffer(BufferHandle handle)
+{
+    mBufferHandler.destroyBuffer(handle);
 }
 
 } // Suou

@@ -1,10 +1,13 @@
 #pragma once
 
-#include "Renderer/RenderDevice.h"
+#include <vk_mem_alloc.h>
+
 #include "Window.h"
 
+#include "Renderer/RenderDevice.h"
 #include "VKDevice.h"
 #include "VKSwapchain.h"
+#include "Handlers/VKBufferHandler.h"
 
 namespace Suou
 {
@@ -16,13 +19,19 @@ public:
     ~VKRenderDevice() override;
 
     void destroy() override final;
+    
+    BufferHandle createBuffer(const BufferDescription& desc) override final;
 
+    void destroyBuffer(BufferHandle handle) override final;
 
 private:
     void init();
     void initCommands();
+    void initAllocator();
 
 private:
+    bool mInitialized;
+
     VkInstance mInstance;
     VkDebugUtilsMessengerEXT mDebugMessenger;
     VkSurfaceKHR mSurface;
@@ -30,9 +39,13 @@ private:
     VKDevice mDevice;
     VKSwapchain mSwapchain;
 
+    VKBufferHandler mBufferHandler;
+
     VkCommandPool mCommandPool;
 
-    bool mInitialized;
+    VmaAllocator mAllocator;
+
+    friend class VKBufferHandler;
 };
 
 }

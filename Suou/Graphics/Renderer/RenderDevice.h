@@ -14,6 +14,9 @@ public:
 
     virtual void destroy() = 0;
 
+    virtual BufferHandle createBuffer(const BufferDescription& desc) = 0;
+    virtual void destroyBuffer(BufferHandle handle) = 0;
+
 protected:
     RenderDevice() {};
     

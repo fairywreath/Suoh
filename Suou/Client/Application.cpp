@@ -16,6 +16,13 @@ Application::Application() :
     mIsInitialized(false)
 {
     init();
+
+    // test
+    BufferHandle buf = mRenderDevice->createBuffer({
+        .size = 64,
+    });
+    LOG_DEBUG("BufferHandle: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf));
+    mRenderDevice->destroyBuffer(buf);
 }
 
 Application::~Application()

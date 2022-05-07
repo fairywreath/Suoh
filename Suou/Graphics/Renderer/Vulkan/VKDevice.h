@@ -19,7 +19,7 @@ public:
 	VkPhysicalDevice getPhysical() const;
 
 	// XXX: return reference so we can use callbacks for 
-    //      object destructions using this device?
+	//      object destructions using this device?
 	const VkDevice& getLogical() const;
 
 	VkQueue getGraphicsQueue() const;
