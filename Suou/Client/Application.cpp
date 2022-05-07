@@ -51,7 +51,7 @@ void Application::init()
     mMainWindow = std::make_unique<WindowsWindow>(props);
 #endif
 
-    mRenderDevice = std::make_unique<VKRenderDevice>();
+    mRenderDevice = std::make_unique<VKRenderDevice>(mMainWindow.get());
 
     mIsInitialized = true;
 }

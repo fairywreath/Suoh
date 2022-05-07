@@ -13,4 +13,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     platform
     type_safe
     Vulkan::Vulkan
+    VulkanMemoryAllocator
 )

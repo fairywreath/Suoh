@@ -148,16 +148,27 @@ static VkDebugUtilsMessengerEXT createVkDebugUtilsMessenger(VkInstance instance)
     return debugMessenger;
 }
 
+VkSurfaceKHR createVkSurfaceKHRFromGLFW(VkInstance instance, GLFWwindow* window)
+{
+	VkSurfaceKHR surface;
+	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+		throw std::runtime_error("failed to craete window surface");
+	}
+	return surface;
+}
 
 } // anonymous namespace
 
 
-VKRenderDevice::VKRenderDevice() :
+VKRenderDevice::VKRenderDevice(Window* window) :
     mInstance(createVkInstance()),
     mDebugMessenger(createVkDebugUtilsMessenger(mInstance)),
-    mInitialized(false)
+    mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
+    mInitialized(false),
+    mDevice(mInstance, mSurface),
+    mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight())
 {
-
+    init();
 }
 
 VKRenderDevice::~VKRenderDevice()
@@ -165,11 +176,39 @@ VKRenderDevice::~VKRenderDevice()
     destroy();
 }
 
-void VKRenderDevice::destroy()
+void VKRenderDevice::init()
 {
-    destroyDebugUtilsMessengerEXT(mInstance ,mDebugMessenger, nullptr);
-    vkDestroyInstance(mInstance, nullptr);
+    initCommands();
 }
 
+void VKRenderDevice::initCommands()
+{
+    VkCommandPoolCreateInfo commandPoolInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = mDevice.getGraphicsFamily()
+    };
+
+    VK_CHECK(vkCreateCommandPool(mDevice.getLogical(), &commandPoolInfo, nullptr, &mCommandPool));
+}
+
+void VKRenderDevice::destroy()
+{
+    auto device = mDevice.getLogical();
+
+    vkDestroyCommandPool(device, mCommandPool, nullptr);
+
+    mSwapchain.destroy();
+    mDevice.destroy();
+
+    vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
+    if (VKCommon::EnableValidationLayers)
+    {
+        destroyDebugUtilsMessengerEXT(mInstance ,mDebugMessenger, nullptr);
+    }
+    vkDestroyInstance(mInstance, nullptr);
+}
 
 } // Suou

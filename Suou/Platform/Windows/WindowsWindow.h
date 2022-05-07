@@ -14,13 +14,13 @@ public:
     explicit WindowsWindow(const WindowProperties& props);
     ~WindowsWindow() override;
 
-	bool init(const WindowProperties& props) override final;
-	void destroy() override final;
-	void close() override final;
-	void update() override final;
+    bool init(const WindowProperties& props) override final;
+    void destroy() override final;
+    void close() override final;
+    void update() override final;
 
-	bool shouldClose() const override final;
-	void resize(u32 width, u32 height) override final;
+    bool shouldClose() const override final;
+    void resize(u32 width, u32 height) override final;
 
     u32 getWidth() const override final;
     u32 getHeight() const override final;
