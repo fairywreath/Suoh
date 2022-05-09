@@ -1,5 +1,6 @@
 #include "VKBufferHandler.h"
 #include "../VKRenderDevice.h"
+#include "../VKUtils.h"
 
 #include <vector>
 #include <queue>
@@ -32,9 +33,8 @@ static inline VKBufferHandlerData& toBufferHandlerData(IVKBufferHandlerData* dat
 
 VKBufferHandler::VKBufferHandler(VKRenderDevice& renderDevice) :
     mRenderDevice(renderDevice),
-    mData(nullptr)
-{    
-    mData = std::make_unique<VKBufferHandlerData>();
+    mData(std::make_unique<VKBufferHandlerData>())
+{
 }
 
 VKBufferHandler::~VKBufferHandler()
@@ -52,17 +52,17 @@ BufferHandle VKBufferHandler::createBuffer(const BufferDescription& desc)
     auto device = mRenderDevice.mDevice.getLogical();
     auto& data = toBufferHandlerData(mData.get());
 
-    const VkBufferCreateInfo bufferInfo = 
+    BufferHandle handle = acquireNewHandle();
+    Buffer& buffer = data.buffers[toHandleType(handle)];
+    SU_ASSERT(buffer.size == 0);
+
+    const VkBufferCreateInfo bufferInfo
     {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.pNext = nullptr,
 		.flags = 0,
 		.size = desc.size,
-
-        // TODO
-        // .usage = desc.usage,
-        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-
+        .usage = VKUtils::toVkBufferUsageFlags(desc.usage),
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.queueFamilyIndexCount = 0,
 		.pQueueFamilyIndices = nullptr
@@ -70,14 +70,9 @@ BufferHandle VKBufferHandler::createBuffer(const BufferDescription& desc)
 
     const VmaAllocationCreateInfo vmaallocInfo 
     {
-        // TODO
-        // .usage = desc.memoryUsage
-        .usage = VMA_MEMORY_USAGE_GPU_ONLY
+        .usage = VKUtils::toVmaMemoryUsage(desc.memoryUsage)
     };
 
-    BufferHandle handle = acquireNewHandle();
-    Buffer& buffer = data.buffers[toHandleType(handle)];
-    SU_ASSERT(buffer.size == 0);
     VK_CHECK(vmaCreateBuffer(mRenderDevice.mAllocator, &bufferInfo, &vmaallocInfo,
         &buffer.buffer,
         &buffer.allocation,
@@ -114,11 +109,24 @@ BufferHandle VKBufferHandler::acquireNewHandle()
     } 
     else
     {
-        handle = BufferHandle(static_cast<type_safe::underlying_type<BufferHandle>>(data.buffers.size()));
+        handle = BufferHandle(static_cast<HandleType>(data.buffers.size()));
         data.buffers.emplace_back();
     }
 
     return handle;
+}
+
+VkBuffer VKBufferHandler::getVkBuffer(BufferHandle handle) const
+{
+    HandleType handleValue = toHandleType(handle);
+    auto& data = toBufferHandlerData(mData.get());
+
+    SU_ASSERT(handleValue < data.buffers.size());
+
+    Buffer& buffer = data.buffers[handleValue];
+    SU_ASSERT(buffer.size != 0);
+
+    return buffer.buffer;
 }
 
 }

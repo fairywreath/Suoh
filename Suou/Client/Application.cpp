@@ -20,9 +20,17 @@ Application::Application() :
     // test
     BufferHandle buf = mRenderDevice->createBuffer({
         .size = 64,
+        .usage = BufferUsage::UNIFORM_BUFFER
     });
     LOG_DEBUG("BufferHandle: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf));
     mRenderDevice->destroyBuffer(buf);
+
+    BufferHandle buf2 = mRenderDevice->createBuffer({
+        .size = 32,
+        .usage = BufferUsage::VERTEX_BUFFER
+    });
+    LOG_DEBUG("BufferHandle 2: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf2));
+    mRenderDevice->destroyBuffer(buf2);
 }
 
 Application::~Application()

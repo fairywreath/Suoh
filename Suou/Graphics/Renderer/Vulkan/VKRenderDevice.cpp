@@ -167,7 +167,9 @@ VKRenderDevice::VKRenderDevice(Window* window) :
     mInitialized(false),
     mDevice(mInstance, mSurface),
     mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()),
-    mBufferHandler(*this)
+    mBufferHandler(*this),
+    mUploadBufferHandler(*this),
+    mImageHandler(*this)
 {
     init();
 }
@@ -181,6 +183,8 @@ void VKRenderDevice::init()
 {
     initAllocator();
     initCommands();
+
+    mUploadBufferHandler.init();
 }
 
 void VKRenderDevice::initCommands()
@@ -213,8 +217,9 @@ void VKRenderDevice::destroy()
     // XXX: use deletion queue?
     auto device = mDevice.getLogical();
 
-    vkDestroyCommandPool(device, mCommandPool, nullptr);
+    mUploadBufferHandler.destroy();
 
+    vkDestroyCommandPool(device, mCommandPool, nullptr);
     vmaDestroyAllocator(mAllocator);
 
     mBufferHandler.destroy();
@@ -237,6 +242,75 @@ BufferHandle VKRenderDevice::createBuffer(const BufferDescription& desc)
 void VKRenderDevice::destroyBuffer(BufferHandle handle)
 {
     mBufferHandler.destroyBuffer(handle);
+}
+
+ImageHandle VKRenderDevice::createImage(const ImageDescription& desc)
+{
+    return ImageHandle(0);
+}
+
+void VKRenderDevice::destroyImage(ImageHandle)
+{
+    
+}
+
+void VKRenderDevice::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
+{
+    mUploadBufferHandler.uploadToBuffer(dstBufferHandle, dstOffset, data, srcOffset, size);
+}
+
+VkCommandBuffer VKRenderDevice::beginSingleTimeCommands()
+{
+	VkCommandBuffer commandBuffer;
+
+	const VkCommandBufferAllocateInfo allocInfo = 
+    {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.commandPool = mCommandPool,       // XXX: use different command pool?
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+
+	vkAllocateCommandBuffers(mDevice.getLogical(), &allocInfo, &commandBuffer);
+
+	const VkCommandBufferBeginInfo beginInfo = 
+    {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = nullptr,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		.pInheritanceInfo = nullptr
+	};
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	return commandBuffer;
+}
+
+void VKRenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+{
+	vkEndCommandBuffer(commandBuffer);
+
+	const VkSubmitInfo submitInfo = 
+    {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = nullptr,
+		.waitSemaphoreCount = 0,
+		.pWaitSemaphores = nullptr,
+		.pWaitDstStageMask = nullptr,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer,
+		.signalSemaphoreCount = 0,
+		.pSignalSemaphores = nullptr
+	};
+
+    auto graphicsQueue = mDevice.getGraphicsQueue();
+    auto& device = mDevice.getLogical();
+
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(graphicsQueue);
+
+	vkFreeCommandBuffers(device, mCommandPool, 1, &commandBuffer);
 }
 
 } // Suou

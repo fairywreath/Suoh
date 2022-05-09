@@ -6,11 +6,11 @@
 namespace Suou
 {
 
-STRONG_TYPEDEF(ImageHandle, u32);
+STRONG_TYPEDEF(SamplerHandle, u32);
 
-struct ImageDescription
+struct SamplerDescription
 {
-    // TODO
+    
 };
 
 }
