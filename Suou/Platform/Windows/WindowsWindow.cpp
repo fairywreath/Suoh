@@ -5,11 +5,7 @@
 namespace Suou
 {
 
-WindowsWindow::WindowsWindow(const WindowProperties& props) :
-    mWindow(nullptr),
-    mWidth(0),
-    mHeight(0),
-    mTitle("")
+WindowsWindow::WindowsWindow(const WindowProperties& props) : mWindow(nullptr), mWidth(0), mHeight(0), mTitle("")
 {
     init(props);
 }
@@ -74,7 +70,7 @@ bool WindowsWindow::shouldClose() const
 
 void WindowsWindow::resize(u32 width, u32 height)
 {
-glfwSetWindowSize(mWindow, width, height);
+    glfwSetWindowSize(mWindow, width, height);
 }
 
 u32 WindowsWindow::getWidth() const
@@ -92,4 +88,4 @@ void* WindowsWindow::getNativeWindow() const
     return static_cast<void*>(mWindow);
 }
 
-}
+} // namespace Suou

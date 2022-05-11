@@ -8,17 +8,17 @@ namespace Suou
 std::ostream* Logger::mOutputStream = nullptr;
 std::mutex Logger::mOutputMutex;
 
-void Logger::setOutput(std::ostream* output) 
+void Logger::setOutput(std::ostream* output)
 {
-    auto &&lock __attribute__((unused)) = std::lock_guard<std::mutex>(mOutputMutex);
+    auto&& lock __attribute__((unused)) = std::lock_guard<std::mutex>(mOutputMutex);
 
     mOutputStream = output;
 }
 
-Logger& Logger::getInstance() 
+Logger& Logger::getInstance()
 {
-    static auto &&logger = Logger();
+    static auto&& logger = Logger();
     return (logger);
 }
 
-}
+} // namespace Suou

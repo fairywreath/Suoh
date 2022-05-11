@@ -2,5 +2,4 @@
 
 #include <cassert>
 
-#define SU_ASSERT(expr)       \
-    assert(expr)
+#define SUOU_ASSERT(expr) assert(expr)

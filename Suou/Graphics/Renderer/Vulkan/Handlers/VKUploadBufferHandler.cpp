@@ -26,16 +26,14 @@ static inline StagingBufferData& toStagingBufferData(IStagingBufferData* data)
     return static_cast<StagingBufferData&>(*data);
 }
 
-VKUploadBufferHandler::VKUploadBufferHandler(VKRenderDevice& renderDevice) :
-    mRenderDevice(renderDevice),
-    mData(std::make_unique<StagingBufferData>())
+VKUploadBufferHandler::VKUploadBufferHandler(VKRenderDevice& renderDevice)
+    : mRenderDevice(renderDevice), mData(std::make_unique<StagingBufferData>())
 {
 }
 
 VKUploadBufferHandler::~VKUploadBufferHandler()
 {
 }
-
 
 void VKUploadBufferHandler::init()
 {
@@ -51,25 +49,20 @@ void VKUploadBufferHandler::initStagingBuffers()
 {
     auto& data = toStagingBufferData(mData.get());
 
-    VkBufferCreateInfo stagingBufferInfo 
-    {
+    VkBufferCreateInfo stagingBufferInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
         .size = STAGING_BUFFER_SIZE,
-        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    };
-    
-    const VmaAllocationCreateInfo stagingBufferAllocInfo
-    {
-        .usage = VMA_MEMORY_USAGE_CPU_ONLY
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
     };
 
-    
+    const VmaAllocationCreateInfo stagingBufferAllocInfo = {
+        .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+    };
+
     StagingBuffer& stagingBuffer = data.stagingBuffer;
     VK_CHECK(vmaCreateBuffer(mRenderDevice.mAllocator, &stagingBufferInfo, &stagingBufferAllocInfo,
-        &stagingBuffer.buffer,
-        &stagingBuffer.allocation,
-        nullptr));
+                             &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr));
     stagingBuffer.size = STAGING_BUFFER_SIZE;
 }
 
@@ -80,13 +73,12 @@ void VKUploadBufferHandler::destroyStagingBuffers()
     vmaDestroyBuffer(mRenderDevice.mAllocator, data.stagingBuffer.buffer, data.stagingBuffer.allocation);
 }
 
-
 UploadBuffer VKUploadBufferHandler::createUploadBuffer(BufferHandle targetBuffer, size_t size)
 {
     // TODO: handle variable size
-    if (size > STAGING_BUFFER_SIZE) 
+    if (size > STAGING_BUFFER_SIZE)
     {
-        SU_ASSERT("Staging buffer is too small!");
+        SUOU_ASSERT("Staging buffer is too small!");
     }
 
     // TODO: handle multithreaded case with multiple buffers
@@ -106,7 +98,8 @@ void VKUploadBufferHandler::destroyUploadBuffer(UploadBuffer& buffer)
     vmaUnmapMemory(mRenderDevice.mAllocator, data.stagingBuffer.allocation);
 }
 
-void VKUploadBufferHandler::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
+void VKUploadBufferHandler::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
+                                           u64 size)
 {
     auto& stagingData = toStagingBufferData(mData.get());
 
@@ -119,16 +112,15 @@ void VKUploadBufferHandler::uploadToBuffer(BufferHandle dstBufferHandle, u64 dst
 
     VkBuffer srcBuffer = stagingData.stagingBuffer.buffer;
     VkBuffer dstBuffer = mRenderDevice.mBufferHandler.getVkBuffer(dstBufferHandle);
-	const VkBufferCopy copyRegion = 
-    {
-		.srcOffset = 0,     // srtOffset already set in memcpy above, stagingbuffer offset is currently 0
-		.dstOffset = dstOffset,
-		.size = size
-	};
+    const VkBufferCopy copyRegion = {
+        .srcOffset = 0, // srtOffset already set in memcpy above, stagingbuffer offset is currently 0
+        .dstOffset = dstOffset,
+        .size = size,
+    };
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
     mRenderDevice.endSingleTimeCommands(commandBuffer);
 }
 
-}
+} // namespace Suou

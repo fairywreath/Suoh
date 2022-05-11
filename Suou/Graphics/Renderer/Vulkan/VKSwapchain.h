@@ -8,46 +8,46 @@ namespace Suou
 class VKSwapchain
 {
 public:
-	VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height);
-	~VKSwapchain();
+    VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height);
+    ~VKSwapchain();
 
-	void destroy();
+    void destroy();
 
-	void acquireNextImage();
-	void present(VkSemaphore renderSemaphore);
+    void acquireNextImage();
+    void present(VkSemaphore renderSemaphore);
 
-	VkImage getImage(std::size_t index) const;
-	const VkImageView& getImageView(std::size_t index) const;
+    VkImage getImage(std::size_t index) const;
+    const VkImageView& getImageView(std::size_t index) const;
 
-	size_t getImageCount() const;
-	size_t getImageIndex() const;
-	const VkSemaphore& getCurrentPresentSemaphore() const;
+    size_t getImageCount() const;
+    size_t getImageIndex() const;
+    const VkSemaphore& getCurrentPresentSemaphore() const;
 
-	VkFormat getSwapchainImageFormat() const;
-	VkExtent2D getExtent() const;
-
-private:
-	void initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height);
-	void initSemaphores();
+    VkFormat getSwapchainImageFormat() const;
+    VkExtent2D getExtent() const;
 
 private:
-	VkSurfaceKHR mSurface;
-	VkSwapchainKHR mSwapchain;
+    void initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height);
+    void initSemaphores();
 
-	const VKDevice& mDevice;
+private:
+    VkSurfaceKHR mSurface;
+    VkSwapchainKHR mSwapchain;
 
-	VkFormat mSwapchainImageFormat{};
-	VkPresentModeKHR mPresentMode{};
-	VkExtent2D mExtent{};
+    const VKDevice& mDevice;
 
-	std::vector<VkImage> mImages;
-	std::vector<VkImageView> mImageViews;
+    VkFormat mSwapchainImageFormat{};
+    VkPresentModeKHR mPresentMode{};
+    VkExtent2D mExtent{};
 
-	std::vector<VkSemaphore> mPresentSemaphores;
+    std::vector<VkImage> mImages;
+    std::vector<VkImageView> mImageViews;
 
-	size_t mImageCount = 0;
-	u32 mImageIndex = 0;
-	u32 mFrameIndex = 0;
+    std::vector<VkSemaphore> mPresentSemaphores;
+
+    size_t mImageCount = 0;
+    u32 mImageIndex = 0;
+    u32 mFrameIndex = 0;
 };
 
-}
+} // namespace Suou

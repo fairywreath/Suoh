@@ -23,16 +23,13 @@ static inline VKImageHandlerData& toImageHandlerData(IVKImageHandlerData* data)
     return static_cast<VKImageHandlerData&>(*data);
 }
 
-
-VKImageHandler::VKImageHandler(VKRenderDevice& renderDevice) :
-    mRenderDevice(renderDevice),
-    mData(std::make_unique<VKImageHandlerData>())
+VKImageHandler::VKImageHandler(VKRenderDevice& renderDevice)
+    : mRenderDevice(renderDevice), mData(std::make_unique<VKImageHandlerData>())
 {
 }
 
-VKImageHandler:: ~VKImageHandler()
+VKImageHandler::~VKImageHandler()
 {
-
 }
 
 ImageHandle VKImageHandler::createImage(const ImageDescription& desc)
@@ -43,33 +40,30 @@ ImageHandle VKImageHandler::createImage(const ImageDescription& desc)
     ImageHandle handle = acquireNewHandle();
     Image& image = data.images[toHandleType(handle)];
 
-	// const VkImageCreateInfo imageCreateInfo = 
+    // const VkImageCreateInfo imageCreateInfo =
     // {
-	// 	.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-	// 	.pNext = nullptr,
-	// 	.flags = flags,
-	// 	.imageType = VK_IMAGE_TYPE_2D,
-	// 	.format = format,
-	// 	.extent = VkExtent3D {.width = width, .height = height, .depth = 1 },
-	// 	.mipLevels = mipLevels,
-	// 	.arrayLayers = (u32)((flags == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? 6 : 1),
-	// 	.samples = VK_SAMPLE_COUNT_1_BIT,
-	// 	.tiling = tiling,
-	// 	.usage = usage,
-	// 	.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	// 	.queueFamilyIndexCount = 0,
-	// 	.pQueueFamilyIndices = nullptr,
-	// 	.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
-	// };
-
-
+    // 	.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+    // 	.pNext = nullptr,
+    // 	.flags = flags,
+    // 	.imageType = VK_IMAGE_TYPE_2D,
+    // 	.format = format,
+    // 	.extent = VkExtent3D {.width = width, .height = height, .depth = 1 },
+    // 	.mipLevels = mipLevels,
+    // 	.arrayLayers = (u32)((flags == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? 6 : 1),
+    // 	.samples = VK_SAMPLE_COUNT_1_BIT,
+    // 	.tiling = tiling,
+    // 	.usage = usage,
+    // 	.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    // 	.queueFamilyIndexCount = 0,
+    // 	.pQueueFamilyIndices = nullptr,
+    // 	.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+    // };
 
     return handle;
 }
 
 void VKImageHandler::destroyImage(ImageHandle image)
 {
-
 }
 
 ImageHandle VKImageHandler::acquireNewHandle()
@@ -81,7 +75,7 @@ ImageHandle VKImageHandler::acquireNewHandle()
     {
         handle = data.returnedImageHandles.front();
         data.returnedImageHandles.pop();
-    } 
+    }
     else
     {
         handle = ImageHandle(static_cast<HandleType>(data.images.size()));
@@ -91,4 +85,4 @@ ImageHandle VKImageHandler::acquireNewHandle()
     return handle;
 }
 
-}
+} // namespace Suou

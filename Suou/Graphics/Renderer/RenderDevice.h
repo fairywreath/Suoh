@@ -4,17 +4,17 @@
 
 #include "Resources/Buffer.h"
 #include "Resources/Image.h"
-#include "Resources/Texture.h"
 #include "Resources/Sampler.h"
+#include "Resources/Texture.h"
 #include "Resources/UploadBuffer.h"
 
 namespace Suou
 {
-    
+
 class RenderDevice
 {
 public:
-    virtual ~RenderDevice() {};
+    virtual ~RenderDevice(){};
 
     virtual void destroy() = 0;
 
@@ -27,7 +27,8 @@ public:
     virtual ImageHandle createImage(const ImageDescription& desc) = 0;
     virtual void destroyImage(ImageHandle) = 0;
 
-    virtual void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size) = 0;
+    virtual void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
+        = 0;
 
     // virtual UploadBuffer createUploadBuffer(BufferHandle targetBuffer, size_t size) = 0;
     // virtual void destroyUploadBuffer(UploadBuffer uploadBuffer) = 0;
@@ -36,8 +37,7 @@ public:
     // virtual void unmapBuffer(BufferHandle handle) = 0;
 
 protected:
-    RenderDevice() {};
-    
+    RenderDevice(){};
 };
 
-}
+} // namespace Suou

@@ -4,6 +4,7 @@
 
 #include <SuouBase.h>
 #include <Window.h>
+
 #include <Renderer/RenderDevice.h>
 
 namespace Suou
@@ -30,4 +31,4 @@ private:
     std::unique_ptr<RenderDevice> mRenderDevice;
 };
 
-}
+} // namespace Suou

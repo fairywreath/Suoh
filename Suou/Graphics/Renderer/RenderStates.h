@@ -7,44 +7,43 @@ namespace Suou
 
 enum BufferUsage : u8
 {
-	VERTEX_BUFFER			= (1 << 0),
-	INDEX_BUFFER			= (1 << 1),
-	STORAGE_BUFFER			= (1 << 2),
-	UNIFORM_BUFFER			= (1 << 3),
-	INDIRECT_BUFFER			= (1 << 4),
-	TRANSFER_SOURCE			= (1 << 5),
-	TRANSFER_DESTINATION	= (1 << 6),
+    VERTEX_BUFFER = (1 << 0),
+    INDEX_BUFFER = (1 << 1),
+    STORAGE_BUFFER = (1 << 2),
+    UNIFORM_BUFFER = (1 << 3),
+    INDIRECT_BUFFER = (1 << 4),
+    TRANSFER_SOURCE = (1 << 5),
+    TRANSFER_DESTINATION = (1 << 6),
 };
 
 enum class BufferMemoryUsage
 {
-	GPU_ONLY,
-	CPU_ONLY,
-	CPU_TO_GPU,
-	GPU_TO_CPU,
-	CPU_COPY,
+    GPU_ONLY,
+    CPU_ONLY,
+    CPU_TO_GPU,
+    GPU_TO_CPU,
+    CPU_COPY,
 };
 
 enum ImageUsage : u8
 {
-	IMAGE_TRANSFER_SOURCE		= (1 << 0),
-	IMAGE_TRANSFER_DESTINATION	= (1 << 1),
-	SAMPLED						= (1 << 2),
-	STORAGE						= (1 << 3),
-	COLOR_ATTACHMENT			= (1 << 4),
-	DEPTH_STENCIL_ATTACHMENT	= (1 << 5),
-	TRANSIENT_ATTACHMENT		= (1 << 6),
-	INPUT_ATTACHMENT			= (1 << 7),
+    IMAGE_TRANSFER_SOURCE = (1 << 0),
+    IMAGE_TRANSFER_DESTINATION = (1 << 1),
+    SAMPLED = (1 << 2),
+    STORAGE = (1 << 3),
+    COLOR_ATTACHMENT = (1 << 4),
+    DEPTH_STENCIL_ATTACHMENT = (1 << 5),
+    TRANSIENT_ATTACHMENT = (1 << 6),
+    INPUT_ATTACHMENT = (1 << 7),
 };
-
 
 enum class SampleCount
 {
-	SAMPLE_COUNT_1,
-	SAMPLE_COUNT_2,
-	SAMPLE_COUNT_4,
-	SAMPLE_COUNT_8,
-	SAMPLE_COUNT_16,
+    SAMPLE_COUNT_1,
+    SAMPLE_COUNT_2,
+    SAMPLE_COUNT_4,
+    SAMPLE_COUNT_8,
+    SAMPLE_COUNT_16,
 };
 
 enum class ImageFormat
@@ -122,7 +121,6 @@ enum class DepthImageFormat
     R16_UNORM
 };
 
-
 enum class ShaderType
 {
     SHADER_VERTEX,
@@ -132,4 +130,4 @@ enum class ShaderType
     SHADER_TESSELATION
 };
 
-}
+} // namespace Suou

@@ -16,4 +16,4 @@ using s16 = std::int16_t;
 using s32 = std::int32_t;
 using s64 = std::int64_t;
 
-}
+} // namespace Suou

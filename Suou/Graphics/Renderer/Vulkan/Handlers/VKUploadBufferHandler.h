@@ -2,17 +2,18 @@
 
 #include <vk_mem_alloc.h>
 
-#include "../VKCommon.h"
-#include "../../Resources/UploadBuffer.h"
 #include "../../Resources/Buffer.h"
-
+#include "../../Resources/UploadBuffer.h"
+#include "../VKCommon.h"
 
 namespace Suou
 {
 
 class VKRenderDevice;
 
-struct IStagingBufferData {};
+struct IStagingBufferData
+{
+};
 
 class VKUploadBufferHandler
 {
@@ -38,5 +39,4 @@ private:
     VKRenderDevice& mRenderDevice;
 };
 
-
-}
+} // namespace Suou

@@ -13,4 +13,4 @@ struct ImageDescription
     // TODO
 };
 
-}
+} // namespace Suou

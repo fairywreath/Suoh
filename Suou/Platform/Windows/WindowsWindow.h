@@ -29,11 +29,10 @@ public:
 
 private:
     GLFWwindow* mWindow;
-    
+
     u32 mWidth;
     u32 mHeight;
     std::string mTitle;
 };
 
-}
-
+} // namespace Suou

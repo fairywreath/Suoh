@@ -9,4 +9,4 @@ struct UploadBuffer
     void* mappedData;
 };
 
-}
+} // namespace Suou

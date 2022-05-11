@@ -7,7 +7,7 @@
 namespace Suou
 {
 
-struct SwapchainSupportDetails 
+struct SwapchainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -17,16 +17,17 @@ struct SwapchainSupportDetails
 namespace
 {
 
-static SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) 
+static SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     SwapchainSupportDetails details;
-    
+
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
     u32 formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
-    if (formatCount != 0) {
+    if (formatCount != 0)
+    {
         details.formats.resize(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
     }
@@ -34,20 +35,22 @@ static SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, Vk
     u32 presentModeCount;
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 
-    if (presentModeCount != 0) {
+    if (presentModeCount != 0)
+    {
         details.presentModes.resize(presentModeCount);
         vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
     }
 
-
-
     return details;
 }
 
-static VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) 
+static VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    for (const auto& availableFormat : availableFormats)
+    {
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
+            && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
             return availableFormat;
         }
     }
@@ -55,28 +58,28 @@ static VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(const std::vector<VkSurfa
     return availableFormats[0];
 }
 
-static VkPresentModeKHR chooseSwapchainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+static VkPresentModeKHR chooseSwapchainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+{
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-static VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height) {
-    constexpr auto undefined_size = std::numeric_limits<u32>::max() ;
-    if (capabilities.currentExtent.width != undefined_size) {
+static VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height)
+{
+    constexpr auto undefined_size = std::numeric_limits<u32>::max();
+    if (capabilities.currentExtent.width != undefined_size)
+    {
         return capabilities.currentExtent;
     }
 
     VkExtent2D extent;
-    extent.width = std::max(capabilities.minImageExtent.width,
-        std::min(capabilities.maxImageExtent.width, width));
-    extent.height = std::max(capabilities.minImageExtent.height,
-        std::min(capabilities.maxImageExtent.height, height));
+    extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, width));
+    extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, height));
     return extent;
 }
 
 } // anonymous namespace
 
-VKSwapchain::VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height) :
-    mDevice(device)
+VKSwapchain::VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height) : mDevice(device)
 {
     initSwapchain(surface, device, width, height);
     initSemaphores();
@@ -89,7 +92,6 @@ VKSwapchain::~VKSwapchain()
 void VKSwapchain::destroy()
 {
     auto device = mDevice.getLogical();
-
 
     for (auto semaphore : mPresentSemaphores)
     {
@@ -107,26 +109,26 @@ void VKSwapchain::destroy()
 void VKSwapchain::acquireNextImage()
 {
     // XXX: change to match swapchain return codes
-    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mFrameIndex], nullptr, &mImageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mFrameIndex],
+                                   nullptr, &mImageIndex));
 }
 
 void VKSwapchain::present(VkSemaphore renderSemaphore)
 {
-    VkPresentInfoKHR presentInfo = 
-    {
+    VkPresentInfoKHR presentInfo = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = nullptr,
-        .pSwapchains = &mSwapchain,
-        .swapchainCount = 1,
-        .pWaitSemaphores = &renderSemaphore,
         .waitSemaphoreCount = 1,
-        .pImageIndices = &mImageIndex
+        .pWaitSemaphores = &renderSemaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &mSwapchain,
+        .pImageIndices = &mImageIndex,
     };
 
     VK_CHECK(vkQueuePresentKHR(mDevice.getPresentQueue(), &presentInfo));
-    
+
     mFrameIndex++;
-    if (mFrameIndex >= mImageCount) 
+    if (mFrameIndex >= mImageCount)
     {
         mFrameIndex = 0;
     }
@@ -134,14 +136,14 @@ void VKSwapchain::present(VkSemaphore renderSemaphore)
 
 VkImage VKSwapchain::getImage(std::size_t index) const
 {
-    SU_ASSERT(index < mImageCount);
+    SUOU_ASSERT(index < mImageCount);
 
     return mImages[index];
 }
 
 const VkImageView& VKSwapchain::getImageView(std::size_t index) const
 {
-    SU_ASSERT(index < mImageCount);
+    SUOU_ASSERT(index < mImageCount);
 
     return mImageViews[index];
 }
@@ -184,7 +186,7 @@ void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u3
     mExtent = chooseSwapchainExtent(swapChainSupport.capabilities, width, height);
 
     u32 imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) 
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
     {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
@@ -198,19 +200,19 @@ void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u3
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = mExtent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;      
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     u32 graphicsFamily = mDevice.getGraphicsFamily();
     u32 presentFamily = mDevice.getPresentFamily();
-    const std::array<u32, 2> queueFamilyIndices = { graphicsFamily, presentFamily };
+    const std::array<u32, 2> queueFamilyIndices = {graphicsFamily, presentFamily};
 
-    if (graphicsFamily != presentFamily) 
+    if (graphicsFamily != presentFamily)
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
     }
-    else 
+    else
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
@@ -230,9 +232,9 @@ void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u3
 
     // init imageviews
     mImageViews.resize(mImageCount);
-    for (size_t i = 0; i < mImageCount; i++) {
-        VkImageViewCreateInfo imageViewCreateInfo
-        {
+    for (size_t i = 0; i < mImageCount; i++)
+    {
+        VkImageViewCreateInfo imageViewCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = mImages[i],
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -245,7 +247,7 @@ void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u3
             .subresourceRange.baseMipLevel = 0,
             .subresourceRange.levelCount = 1,
             .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1
+            .subresourceRange.layerCount = 1,
         };
 
         VK_CHECK(vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &mImageViews[i]));
@@ -257,17 +259,15 @@ void VKSwapchain::initSemaphores()
     mPresentSemaphores.resize(mImageCount);
 
     VkDevice device = mDevice.getLogical();
-    VkSemaphoreCreateInfo semaphoreCreateInfo
-    {
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = nullptr
+        .pNext = nullptr,
     };
 
     for (size_t i = 0; i < mImageCount; i++)
     {
         VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &mPresentSemaphores[i]));
     }
-
 }
 
-} // Suou
+} // namespace Suou

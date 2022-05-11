@@ -1,7 +1,7 @@
 #include "Application.h"
 
-#include <PlatformDefines.h>
 #include <Logger.h>
+#include <PlatformDefines.h>
 
 #if defined(SU_PLATFORM_WINDOWS)
 #include <Windows/WindowsWindow.h>
@@ -12,22 +12,21 @@
 namespace Suou
 {
 
-Application::Application() :
-    mIsInitialized(false)
+Application::Application() : mIsInitialized(false)
 {
     init();
 
     // test
     BufferHandle buf = mRenderDevice->createBuffer({
         .size = 64,
-        .usage = BufferUsage::UNIFORM_BUFFER
+        .usage = BufferUsage::UNIFORM_BUFFER,
     });
     LOG_DEBUG("BufferHandle: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf));
     mRenderDevice->destroyBuffer(buf);
 
     BufferHandle buf2 = mRenderDevice->createBuffer({
         .size = 32,
-        .usage = BufferUsage::VERTEX_BUFFER
+        .usage = BufferUsage::VERTEX_BUFFER,
     });
     LOG_DEBUG("BufferHandle 2: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf2));
     mRenderDevice->destroyBuffer(buf2);
@@ -40,13 +39,16 @@ Application::~Application()
         destroy();
     }
 }
-    
+
 void Application::run()
 {
-    if (!mIsInitialized) return;
+    if (!mIsInitialized)
+    {
+        return;
+    }
 
     // display window
-    while(!mMainWindow->shouldClose())
+    while (!mMainWindow->shouldClose())
     {
         mMainWindow->update();
     }
@@ -56,10 +58,10 @@ void Application::init()
 {
     mMainWindow.reset();
 
-    WindowProperties props{
+    WindowProperties props = {
         .width = 1280,
         .height = 720,
-        .title = "Suou Engine"
+        .title = "Suou Engine",
     };
 
 #if defined(SU_PLATFORM_WINDOWS)
@@ -76,4 +78,4 @@ void Application::destroy()
     mMainWindow->destroy();
 }
 
-}
+} // namespace Suou

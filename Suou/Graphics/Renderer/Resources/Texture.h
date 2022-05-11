@@ -5,7 +5,7 @@
 
 namespace Suou
 {
-    
+
 STRONG_TYPEDEF(TextureHandle, u32);
 
 struct TextureDescription
@@ -18,4 +18,4 @@ struct TextureDataDescription
     u8* data;
 };
 
-}
+} // namespace Suou

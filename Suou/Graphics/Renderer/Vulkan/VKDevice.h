@@ -11,44 +11,44 @@ namespace Suou
 class VKDevice
 {
 public:
-	VKDevice(VkInstance instance, VkSurfaceKHR surface);
-	~VKDevice();
+    VKDevice(VkInstance instance, VkSurfaceKHR surface);
+    ~VKDevice();
 
-	void destroy();
+    void destroy();
 
-	VkPhysicalDevice getPhysical() const;
+    VkPhysicalDevice getPhysical() const;
 
-	// XXX: return reference so we can use callbacks for 
-	//      object destructions using this device?
-	const VkDevice& getLogical() const;
+    // XXX: return reference so we can use callbacks for
+    //      object destructions using this device?
+    const VkDevice& getLogical() const;
 
-	VkQueue getGraphicsQueue() const;
-	u32 getGraphicsFamily() const;
+    VkQueue getGraphicsQueue() const;
+    u32 getGraphicsFamily() const;
 
-	VkQueue getPresentQueue() const;
-	u32 getPresentFamily() const;
+    VkQueue getPresentQueue() const;
+    u32 getPresentFamily() const;
 
-	VkPhysicalDeviceProperties getPhysDeviceProperties() const;
-
-private:
-	void initPhysDevice();
-	void initLogicalDevice();
+    VkPhysicalDeviceProperties getPhysDeviceProperties() const;
 
 private:
-	VkInstance mInstance;
-	VkSurfaceKHR mSurface;
+    void initPhysDevice();
+    void initLogicalDevice();
 
-	VkPhysicalDevice mPhysDevice;
-	VkDevice mLogicalDevice;
+private:
+    VkInstance mInstance;
+    VkSurfaceKHR mSurface;
 
-	VkQueue mGraphicsQueue;
-	u32 mGraphicsFamily{};         
+    VkPhysicalDevice mPhysDevice;
+    VkDevice mLogicalDevice;
 
-	VkQueue mPresentQueue;
-	u32 mPresentFamily{};
+    VkQueue mGraphicsQueue;
+    u32 mGraphicsFamily{};
 
-	VkPhysicalDeviceProperties mPhysDeviceProperties;
-	VkPhysicalDeviceFeatures2 mPhysDeviceFeatures2;
+    VkQueue mPresentQueue;
+    u32 mPresentFamily{};
+
+    VkPhysicalDeviceProperties mPhysDeviceProperties;
+    VkPhysicalDeviceFeatures2 mPhysDeviceFeatures2;
 };
 
-}
+} // namespace Suou

@@ -15,26 +15,21 @@
 namespace Suou
 {
 
-
-#define VK_CHECK(x)                                                 \
-	do                                                              \
-	{                                                               \
-		VkResult err = x;                                           \
-		if (err)                                                    \
-		{                                                           \
-			std::cout <<"Detected Vulkan error: " << err << std::endl; 	\
-			abort();                                                \
-		}                                                           \
-	} while (0)
-
+#define VK_CHECK(x)                                                                                                    \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        VkResult err = x;                                                                                              \
+        if (err)                                                                                                       \
+        {                                                                                                              \
+            std::cout << "Detected Vulkan error: " << err << std::endl;                                                \
+            abort();                                                                                                   \
+        }                                                                                                              \
+    } while (0)
 
 namespace VKCommon
 {
 
-const std::vector<const char*> ValidationLayers = 
-{
-	"VK_LAYER_KHRONOS_validation"
-};
+const std::vector<const char*> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 #if defined(VK_DEBUG)
 static constexpr bool EnableValidationLayers = true;
@@ -42,6 +37,6 @@ static constexpr bool EnableValidationLayers = true;
 static constexpr bool EnableValidationLayers = false;
 #endif
 
-} // VulkanCommon
+} // namespace VKCommon
 
-} // Suou
+} // namespace Suou

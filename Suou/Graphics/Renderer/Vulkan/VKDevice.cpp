@@ -6,10 +6,7 @@
 namespace Suou
 {
 
-const std::vector<const char*> deviceExtensions = 
-{
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 struct QueueFamilyIndices
 {
@@ -37,9 +34,9 @@ static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
     bool graphicsFound = false;
     bool presentFound = false;
 
-    for (const auto& queueFamily : queueFamilies) 
+    for (const auto& queueFamily : queueFamilies)
     {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.graphicsFamily = i;
             graphicsFound = true;
@@ -48,12 +45,14 @@ static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-        if (presentSupport) {
+        if (presentSupport)
+        {
             indices.presentFamily = i;
             presentFound = true;
         }
 
-        if (graphicsFound && presentFound) {
+        if (graphicsFound && presentFound)
+        {
             indices.complete = true;
             break;
         }
@@ -64,8 +63,7 @@ static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
     return indices;
 }
 
-
-static bool checkDeviceExtensionSupport(VkPhysicalDevice device) 
+static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -75,7 +73,7 @@ static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-    for (const auto& extension : availableExtensions) 
+    for (const auto& extension : availableExtensions)
     {
         requiredExtensions.erase(extension.extensionName);
     }
@@ -99,9 +97,7 @@ static bool isPhysicalDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surfa
 
 } // anonymous namespace
 
-VKDevice::VKDevice(VkInstance instance, VkSurfaceKHR surface) :
-    mInstance(instance),
-    mSurface(surface)
+VKDevice::VKDevice(VkInstance instance, VkSurfaceKHR surface) : mInstance(instance), mSurface(surface)
 {
     initPhysDevice();
     initLogicalDevice();
@@ -151,7 +147,6 @@ VkPhysicalDeviceProperties VKDevice::getPhysDeviceProperties() const
     return mPhysDeviceProperties;
 }
 
-
 void VKDevice::initPhysDevice()
 {
     u32 deviceCount = 0;
@@ -165,32 +160,31 @@ void VKDevice::initPhysDevice()
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(mInstance, &deviceCount, devices.data());
 
-    for (const auto& device : devices) 
+    for (const auto& device : devices)
     {
-        if (isPhysicalDeviceSuitable(device, mSurface)) 
+        if (isPhysicalDeviceSuitable(device, mSurface))
         {
             mPhysDevice = device;
             break;
         }
     }
 
-    if (mPhysDevice == VK_NULL_HANDLE) 
+    if (mPhysDevice == VK_NULL_HANDLE)
     {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
     vkGetPhysicalDeviceProperties(mPhysDevice, &mPhysDeviceProperties);
 
-    VkPhysicalDeviceVulkan11Features vk11Features
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES
+    VkPhysicalDeviceVulkan11Features vk11Features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
     };
 
     mPhysDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     mPhysDeviceFeatures2.pNext = &vk11Features;
     vkGetPhysicalDeviceFeatures2(mPhysDevice, &mPhysDeviceFeatures2);
 
-    if (!vk11Features.shaderDrawParameters) 
+    if (!vk11Features.shaderDrawParameters)
     {
         throw std::runtime_error("VkPhysicalDeviceVulkan11Features.drawShaderParameters not supported!");
     }
@@ -201,13 +195,12 @@ void VKDevice::initLogicalDevice()
     QueueFamilyIndices indices = findQueueFamilies(mPhysDevice, mSurface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<u32> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+    std::set<u32> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
 
     float queuePriority = 1.0f;
-    for (u32 queueFamily : uniqueQueueFamilies) 
+    for (u32 queueFamily : uniqueQueueFamilies)
     {
-        VkDeviceQueueCreateInfo queueCreateInfo
-        {
+        VkDeviceQueueCreateInfo queueCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .queueFamilyIndex = queueFamily,
             .queueCount = 1,
@@ -216,20 +209,17 @@ void VKDevice::initLogicalDevice()
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures 
-    {
-        .pipelineStatisticsQuery = VK_TRUE
+    VkPhysicalDeviceFeatures deviceFeatures = {
+        .pipelineStatisticsQuery = VK_TRUE,
     };
 
     // enable vk1.1 phys device features
-    VkPhysicalDeviceVulkan11Features vk11Features 
-    {
+    VkPhysicalDeviceVulkan11Features vk11Features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
-        .shaderDrawParameters = VK_TRUE
+        .shaderDrawParameters = VK_TRUE,
     };
 
-    VkDeviceCreateInfo createInfo
-    {
+    VkDeviceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext = &vk11Features,
     };
@@ -242,11 +232,13 @@ void VKDevice::initLogicalDevice()
     createInfo.enabledExtensionCount = static_cast<u32>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (VKCommon::EnableValidationLayers) {
+    if (VKCommon::EnableValidationLayers)
+    {
         createInfo.enabledLayerCount = static_cast<u32>(VKCommon::ValidationLayers.size());
         createInfo.ppEnabledLayerNames = VKCommon::ValidationLayers.data();
     }
-    else {
+    else
+    {
         createInfo.enabledLayerCount = 0;
     }
 
@@ -258,4 +250,4 @@ void VKDevice::initLogicalDevice()
     mPresentFamily = indices.presentFamily;
 }
 
-}
+} // namespace Suou

@@ -16,17 +16,21 @@ static bool checkValidationLayerSupport()
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : VKCommon::ValidationLayers) {
+    for (const char* layerName : VKCommon::ValidationLayers)
+    {
         bool layerFound = false;
 
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
+        for (const auto& layerProperties : availableLayers)
+        {
+            if (strcmp(layerName, layerProperties.layerName) == 0)
+            {
                 layerFound = true;
                 break;
             }
         }
 
-        if (!layerFound) {
+        if (!layerFound)
+        {
             return false;
         }
     }
@@ -41,7 +45,8 @@ static std::vector<const char*> getRequiredExtensions()
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (VKCommon::EnableValidationLayers) {
+    if (VKCommon::EnableValidationLayers)
+    {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -50,12 +55,12 @@ static std::vector<const char*> getRequiredExtensions()
 
 [[nodiscard]] static VkInstance createVkInstance()
 {
-    if (VKCommon::EnableValidationLayers && !checkValidationLayerSupport()) {
+    if (VKCommon::EnableValidationLayers && !checkValidationLayerSupport())
+    {
         throw std::runtime_error("Requested validation layers unavailable");
     }
 
-    VkApplicationInfo appInfo
-    {
+    VkApplicationInfo appInfo = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = "Suou",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
@@ -64,23 +69,19 @@ static std::vector<const char*> getRequiredExtensions()
         .apiVersion = VK_API_VERSION_1_3,
     };
 
-
-    VkInstanceCreateInfo createInfo
-    {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pApplicationInfo = &appInfo
-    };
+    VkInstanceCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, .pApplicationInfo = &appInfo};
 
     auto extensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<u32>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    if (VKCommon::EnableValidationLayers) 
+    if (VKCommon::EnableValidationLayers)
     {
         createInfo.enabledLayerCount = static_cast<u32>(VKCommon::ValidationLayers.size());
         createInfo.ppEnabledLayerNames = VKCommon::ValidationLayers.data();
     }
-    else {
+    else
+    {
         createInfo.enabledLayerCount = 0;
     }
 
@@ -89,25 +90,27 @@ static std::vector<const char*> getRequiredExtensions()
     return instance;
 }
 
-/* 
+/*
  * debug callback EXT utils
  */
 
 static VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) 
+                                             const VkAllocationCallbacks* pAllocator,
+                                             VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) 
+    if (func != nullptr)
     {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     }
-    else {
+    else
+    {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
 
-
-static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) 
+static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                          const VkAllocationCallbacks* pAllocator)
 {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr)
@@ -116,31 +119,31 @@ static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
     }
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                    void* pUserData)
 {
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) 
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
     {
         // XXX: use internal logging tool?
         std::cerr << "VK validation layer: " << pCallbackData->pMessage << std::endl;
     }
-
 
     return VK_FALSE;
 }
 
 static VkDebugUtilsMessengerEXT createVkDebugUtilsMessenger(VkInstance instance)
 {
-    VkDebugUtilsMessengerCreateInfoEXT createInfo
-    {
+    VkDebugUtilsMessengerCreateInfoEXT createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-        .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                           | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                           | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+        .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                       | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
         .pfnUserCallback = debugCallback,
-        .pUserData = nullptr
+        .pUserData = nullptr,
     };
 
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -150,26 +153,22 @@ static VkDebugUtilsMessengerEXT createVkDebugUtilsMessenger(VkInstance instance)
 
 VkSurfaceKHR createVkSurfaceKHRFromGLFW(VkInstance instance, GLFWwindow* window)
 {
-	VkSurfaceKHR surface;
-	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-		throw std::runtime_error("failed to craete window surface");
-	}
-	return surface;
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to craete window surface");
+    }
+    return surface;
 }
 
 } // anonymous namespace
 
-
-VKRenderDevice::VKRenderDevice(Window* window) :
-    mInstance(createVkInstance()),
-    mDebugMessenger(createVkDebugUtilsMessenger(mInstance)),
-    mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
-    mInitialized(false),
-    mDevice(mInstance, mSurface),
-    mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()),
-    mBufferHandler(*this),
-    mUploadBufferHandler(*this),
-    mImageHandler(*this)
+VKRenderDevice::VKRenderDevice(Window* window)
+    : mInstance(createVkInstance()), mDebugMessenger(createVkDebugUtilsMessenger(mInstance)),
+      mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
+      mInitialized(false), mDevice(mInstance, mSurface),
+      mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()), mBufferHandler(*this),
+      mUploadBufferHandler(*this), mImageHandler(*this)
 {
     init();
 }
@@ -189,12 +188,11 @@ void VKRenderDevice::init()
 
 void VKRenderDevice::initCommands()
 {
-    VkCommandPoolCreateInfo commandPoolInfo
-    {
+    VkCommandPoolCreateInfo commandPoolInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = mDevice.getGraphicsFamily()
+        .queueFamilyIndex = mDevice.getGraphicsFamily(),
     };
 
     VK_CHECK(vkCreateCommandPool(mDevice.getLogical(), &commandPoolInfo, nullptr, &mCommandPool));
@@ -202,11 +200,10 @@ void VKRenderDevice::initCommands()
 
 void VKRenderDevice::initAllocator()
 {
-    VmaAllocatorCreateInfo allocatorInfo 
-    {
+    VmaAllocatorCreateInfo allocatorInfo = {
         .physicalDevice = mDevice.getPhysical(),
         .device = mDevice.getLogical(),
-        .instance = mInstance
+        .instance = mInstance,
     };
 
     vmaCreateAllocator(&allocatorInfo, &mAllocator);
@@ -229,7 +226,7 @@ void VKRenderDevice::destroy()
     vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
     if (VKCommon::EnableValidationLayers)
     {
-        destroyDebugUtilsMessengerEXT(mInstance ,mDebugMessenger, nullptr);
+        destroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
     }
     vkDestroyInstance(mInstance, nullptr);
 }
@@ -251,66 +248,64 @@ ImageHandle VKRenderDevice::createImage(const ImageDescription& desc)
 
 void VKRenderDevice::destroyImage(ImageHandle)
 {
-    
 }
 
-void VKRenderDevice::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
+void VKRenderDevice::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
+                                    u64 size)
 {
     mUploadBufferHandler.uploadToBuffer(dstBufferHandle, dstOffset, data, srcOffset, size);
 }
 
 VkCommandBuffer VKRenderDevice::beginSingleTimeCommands()
 {
-	VkCommandBuffer commandBuffer;
+    VkCommandBuffer commandBuffer;
 
-	const VkCommandBufferAllocateInfo allocInfo = 
-    {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.pNext = nullptr,
-		.commandPool = mCommandPool,       // XXX: use different command pool?
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1
-	};
+    const VkCommandBufferAllocateInfo allocInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = nullptr,
+        .commandPool = mCommandPool, // XXX: use different command pool?
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
 
-	vkAllocateCommandBuffers(mDevice.getLogical(), &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(mDevice.getLogical(), &allocInfo, &commandBuffer);
 
-	const VkCommandBufferBeginInfo beginInfo = 
-    {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.pNext = nullptr,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		.pInheritanceInfo = nullptr
-	};
+    const VkCommandBufferBeginInfo beginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = nullptr,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = nullptr,
+    };
 
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-	return commandBuffer;
+    return commandBuffer;
 }
 
 void VKRenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 {
-	vkEndCommandBuffer(commandBuffer);
 
-	const VkSubmitInfo submitInfo = 
-    {
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext = nullptr,
-		.waitSemaphoreCount = 0,
-		.pWaitSemaphores = nullptr,
-		.pWaitDstStageMask = nullptr,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &commandBuffer,
-		.signalSemaphoreCount = 0,
-		.pSignalSemaphores = nullptr
-	};
+    vkEndCommandBuffer(commandBuffer);
+
+    const VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = nullptr,
+        .pWaitDstStageMask = nullptr,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = nullptr,
+    };
 
     auto graphicsQueue = mDevice.getGraphicsQueue();
     auto& device = mDevice.getLogical();
 
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphicsQueue);
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
 
-	vkFreeCommandBuffers(device, mCommandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(device, mCommandPool, 1, &commandBuffer);
 }
 
-} // Suou
+} // namespace Suou

@@ -8,7 +8,9 @@
 namespace Suou
 {
 
-struct IVKImageHandlerData {};
+struct IVKImageHandlerData
+{
+};
 
 class VKRenderDevice;
 
@@ -36,5 +38,4 @@ private:
     std::unique_ptr<IVKImageHandlerData> mData;
 };
 
-
-}
+} // namespace Suou

@@ -20,6 +20,6 @@ VkImageUsageFlags toVkImageUsageFlags(u8 usage);
 
 VmaMemoryUsage toVmaMemoryUsage(BufferMemoryUsage usage);
 
-} // VKUtils
+} // namespace VKUtils
 
-} // Suou
+} // namespace Suou

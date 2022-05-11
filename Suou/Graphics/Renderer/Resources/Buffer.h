@@ -1,7 +1,7 @@
 #pragma once
 
-#include <StrongTypedef.h>
 #include "../RenderStates.h"
+#include <StrongTypedef.h>
 
 namespace Suou
 {
@@ -17,5 +17,4 @@ struct BufferDescription
     // VkBufferUsageFlags
 };
 
-
-}
+} // namespace Suou

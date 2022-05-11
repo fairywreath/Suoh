@@ -2,8 +2,8 @@
 #include "../VKRenderDevice.h"
 #include "../VKUtils.h"
 
-#include <vector>
 #include <queue>
+#include <vector>
 
 #include <vk_mem_alloc.h>
 
@@ -31,20 +31,17 @@ static inline VKBufferHandlerData& toBufferHandlerData(IVKBufferHandlerData* dat
     return static_cast<VKBufferHandlerData&>(*data);
 }
 
-VKBufferHandler::VKBufferHandler(VKRenderDevice& renderDevice) :
-    mRenderDevice(renderDevice),
-    mData(std::make_unique<VKBufferHandlerData>())
+VKBufferHandler::VKBufferHandler(VKRenderDevice& renderDevice)
+    : mRenderDevice(renderDevice), mData(std::make_unique<VKBufferHandlerData>())
 {
 }
 
 VKBufferHandler::~VKBufferHandler()
 {
-
 }
 
 void VKBufferHandler::destroy()
 {
-
 }
 
 BufferHandle VKBufferHandler::createBuffer(const BufferDescription& desc)
@@ -54,29 +51,23 @@ BufferHandle VKBufferHandler::createBuffer(const BufferDescription& desc)
 
     BufferHandle handle = acquireNewHandle();
     Buffer& buffer = data.buffers[toHandleType(handle)];
-    SU_ASSERT(buffer.size == 0);
+    SUOU_ASSERT(buffer.size == 0);
 
-    const VkBufferCreateInfo bufferInfo
-    {
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.pNext = nullptr,
-		.flags = 0,
-		.size = desc.size,
+    const VkBufferCreateInfo bufferInfo = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .size = desc.size,
         .usage = VKUtils::toVkBufferUsageFlags(desc.usage),
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 0,
-		.pQueueFamilyIndices = nullptr
-	};
-
-    const VmaAllocationCreateInfo vmaallocInfo 
-    {
-        .usage = VKUtils::toVmaMemoryUsage(desc.memoryUsage)
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
     };
 
-    VK_CHECK(vmaCreateBuffer(mRenderDevice.mAllocator, &bufferInfo, &vmaallocInfo,
-        &buffer.buffer,
-        &buffer.allocation,
-        nullptr));
+    const VmaAllocationCreateInfo vmaallocInfo{.usage = VKUtils::toVmaMemoryUsage(desc.memoryUsage)};
+
+    VK_CHECK(vmaCreateBuffer(mRenderDevice.mAllocator, &bufferInfo, &vmaallocInfo, &buffer.buffer, &buffer.allocation,
+                             nullptr));
     buffer.size = desc.size;
 
     return handle;
@@ -87,7 +78,7 @@ void VKBufferHandler::destroyBuffer(BufferHandle handle)
     HandleType handleValue = toHandleType(handle);
     auto& data = toBufferHandlerData(mData.get());
 
-    SU_ASSERT(handleValue < data.buffers.size());
+    SUOU_ASSERT(handleValue < data.buffers.size());
 
     Buffer& buffer = data.buffers[handleValue];
 
@@ -106,7 +97,7 @@ BufferHandle VKBufferHandler::acquireNewHandle()
     {
         handle = data.returnedBufferHandles.front();
         data.returnedBufferHandles.pop();
-    } 
+    }
     else
     {
         handle = BufferHandle(static_cast<HandleType>(data.buffers.size()));
@@ -121,12 +112,12 @@ VkBuffer VKBufferHandler::getVkBuffer(BufferHandle handle) const
     HandleType handleValue = toHandleType(handle);
     auto& data = toBufferHandlerData(mData.get());
 
-    SU_ASSERT(handleValue < data.buffers.size());
+    SUOU_ASSERT(handleValue < data.buffers.size());
 
     Buffer& buffer = data.buffers[handleValue];
-    SU_ASSERT(buffer.size != 0);
+    SUOU_ASSERT(buffer.size != 0);
 
     return buffer.buffer;
 }
 
-}
+} // namespace Suou

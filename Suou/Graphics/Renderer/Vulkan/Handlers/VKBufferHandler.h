@@ -6,7 +6,9 @@
 namespace Suou
 {
 
-struct IVKBufferHandlerData{};
+struct IVKBufferHandlerData
+{
+};
 
 class VKRenderDevice;
 
@@ -34,10 +36,8 @@ private:
 
 private:
     VKRenderDevice& mRenderDevice;
-    
+
     std::unique_ptr<IVKBufferHandlerData> mData;
 };
 
-
-    
-}
+} // namespace Suou
