@@ -3,6 +3,7 @@
 #include <SuouBase.h>
 
 #include "Resources/Buffer.h"
+#include "Resources/GraphicsPipeline.h"
 #include "Resources/Image.h"
 #include "Resources/Sampler.h"
 #include "Resources/Texture.h"
@@ -29,6 +30,9 @@ public:
 
     virtual void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
         = 0;
+
+    virtual GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineDescription& desc) = 0;
+    virtual void destroyGraphicsPipeline(GraphicsPipelineHandle) = 0;
 
     // virtual UploadBuffer createUploadBuffer(BufferHandle targetBuffer, size_t size) = 0;
     // virtual void destroyUploadBuffer(UploadBuffer uploadBuffer) = 0;

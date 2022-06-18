@@ -7,3 +7,6 @@
 [submodule "Suou/Vendor/vma"]
 	path = Suou/Vendor/vma
 	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Suou/Vendor/Vulkan-Headers"]
+	path = Suou/Vendor/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git

@@ -4,11 +4,6 @@
 
 #include "Application.h"
 
-// #include <Renderer/Vulkan/VKRenderDevice.h>
-#include <Renderer/Vulkan/VKCommon.h>
-
-#include <cassert>
-
 using namespace Suou;
 
 int main()

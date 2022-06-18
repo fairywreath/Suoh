@@ -3,7 +3,7 @@
 #include <vk_mem_alloc.h>
 
 #include "../VKCommon.h"
-#include "Renderer/Resources/Image.h"
+#include "RenderLib/Resources/Image.h"
 
 namespace Suou
 {

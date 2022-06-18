@@ -26,7 +26,7 @@ struct VKBufferHandlerData : IVKBufferHandlerData
     std::queue<BufferHandle> returnedBufferHandles;
 };
 
-static inline VKBufferHandlerData& toBufferHandlerData(IVKBufferHandlerData* data)
+static constexpr VKBufferHandlerData& toBufferHandlerData(IVKBufferHandlerData* data)
 {
     return static_cast<VKBufferHandlerData&>(*data);
 }

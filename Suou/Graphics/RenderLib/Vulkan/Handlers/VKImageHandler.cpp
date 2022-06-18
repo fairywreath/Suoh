@@ -18,7 +18,7 @@ struct VKImageHandlerData : IVKImageHandlerData
     std::queue<ImageHandle> returnedImageHandles;
 };
 
-static inline VKImageHandlerData& toImageHandlerData(IVKImageHandlerData* data)
+static constexpr VKImageHandlerData& toImageHandlerData(IVKImageHandlerData* data)
 {
     return static_cast<VKImageHandlerData&>(*data);
 }

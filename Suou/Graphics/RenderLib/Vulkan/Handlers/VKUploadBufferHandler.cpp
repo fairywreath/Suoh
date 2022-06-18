@@ -21,7 +21,7 @@ struct StagingBufferData : IStagingBufferData
     StagingBuffer stagingBuffer;
 };
 
-static inline StagingBufferData& toStagingBufferData(IStagingBufferData* data)
+static constexpr StagingBufferData& toStagingBufferData(IStagingBufferData* data)
 {
     return static_cast<StagingBufferData&>(*data);
 }

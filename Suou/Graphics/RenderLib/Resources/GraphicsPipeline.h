@@ -10,6 +10,7 @@ STRONG_TYPEDEF(GraphicsPipelineHandle, u32);
 
 struct GraphicsPipelineDescription
 {
+    // TODO
 };
 
 } // namespace Suou

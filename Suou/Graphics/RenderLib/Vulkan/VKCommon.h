@@ -1,5 +1,7 @@
 #pragma once
 
+// vulkan.hpp compilation is too slow for now...
+// #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan.h>
 
 #include <vector>

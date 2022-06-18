@@ -2,8 +2,8 @@
 
 #include <vk_mem_alloc.h>
 
-#include "../../Resources/Buffer.h"
-#include "../../Resources/UploadBuffer.h"
+#include "RenderLib/Resources/Buffer.h"
+#include "RenderLib/Resources/UploadBuffer.h"
 #include "../VKCommon.h"
 
 namespace Suou

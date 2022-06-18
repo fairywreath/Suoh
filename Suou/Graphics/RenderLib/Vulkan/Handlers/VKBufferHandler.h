@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../VKCommon.h"
-#include "Renderer/Resources/Buffer.h"
+#include "RenderLib/Resources/Buffer.h"
 
 namespace Suou
 {

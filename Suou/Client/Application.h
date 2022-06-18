@@ -5,7 +5,7 @@
 #include <SuouBase.h>
 #include <Window.h>
 
-#include <Renderer/RenderDevice.h>
+#include <RenderLib/RenderDevice.h>
 
 namespace Suou
 {

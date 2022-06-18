@@ -93,7 +93,6 @@ static std::vector<const char*> getRequiredExtensions()
 /*
  * debug callback EXT utils
  */
-
 static VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                              const VkAllocationCallbacks* pAllocator,
                                              VkDebugUtilsMessengerEXT* pDebugMessenger)
@@ -306,6 +305,15 @@ void VKRenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkQueueWaitIdle(graphicsQueue);
 
     vkFreeCommandBuffers(device, mCommandPool, 1, &commandBuffer);
+}
+
+GraphicsPipelineHandle VKRenderDevice::createGraphicsPipeline(const GraphicsPipelineDescription& desc)
+{
+    return GraphicsPipelineHandle(0);
+}
+
+void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle)
+{
 }
 
 } // namespace Suou

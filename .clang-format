@@ -8,3 +8,5 @@ PointerAlignment: Left
 ReferenceAlignment: Pointer
 
 BreakBeforeBinaryOperators: All
+
+ColumnLimit: 0
