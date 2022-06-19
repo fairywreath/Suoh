@@ -25,7 +25,7 @@ public:
 
 private:
     using HandleType = type_safe::underlying_type<ImageHandle>;
-    inline HandleType toHandleType(ImageHandle handle) const
+    constexpr HandleType toHandleType(ImageHandle handle) const
     {
         return static_cast<HandleType>(handle);
     }

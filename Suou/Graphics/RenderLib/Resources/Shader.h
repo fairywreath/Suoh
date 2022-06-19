@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <CoreTypes.h>
 #include <StrongTypedef.h>
 
@@ -12,7 +14,7 @@ STRONG_TYPEDEF(ShaderHandle, u32);
 
 struct ShaderDescription
 {
-    const char* filePath;
+    std::string filePath;
 
     // do we need this?
     // ShaderType type;

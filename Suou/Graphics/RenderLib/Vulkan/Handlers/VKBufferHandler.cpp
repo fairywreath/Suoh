@@ -102,6 +102,7 @@ BufferHandle VKBufferHandler::acquireNewHandle()
     {
         handle = BufferHandle(static_cast<HandleType>(data.buffers.size()));
         data.buffers.emplace_back();
+        data.buffers.back().size = 0;
     }
 
     return handle;

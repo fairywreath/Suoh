@@ -167,7 +167,9 @@ VKRenderDevice::VKRenderDevice(Window* window)
       mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
       mInitialized(false), mDevice(mInstance, mSurface),
       mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()), mBufferHandler(*this),
-      mUploadBufferHandler(*this), mImageHandler(*this)
+      mUploadBufferHandler(*this),
+      mImageHandler(*this),
+      mShaderHandler(*this)
 {
     init();
 }
@@ -315,5 +317,15 @@ GraphicsPipelineHandle VKRenderDevice::createGraphicsPipeline(const GraphicsPipe
 void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle)
 {
 }
+
+ShaderHandle VKRenderDevice::createShader(const ShaderDescription& desc)
+{
+    return mShaderHandler.createShader(desc);
+};
+
+void VKRenderDevice::destroyShader(ShaderHandle handle)
+{
+    mShaderHandler.destroyShader(handle);
+};
 
 } // namespace Suou

@@ -15,4 +15,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Vulkan::Vulkan
     VulkanMemoryAllocator
     Vulkan::Headers
+    glslang
+    SPIRV
 )
+
+# manually add DefaultTBuiltinresource....., maybe initialize this inside this project?
+target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/../Vendor/glslang/StandAlone/ResourceLimits.cpp)

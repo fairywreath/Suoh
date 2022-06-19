@@ -10,3 +10,6 @@
 [submodule "Suou/Vendor/Vulkan-Headers"]
 	path = Suou/Vendor/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "Suou/Vendor/glslang"]
+	path = Suou/Vendor/glslang
+	url = git@github.com:KhronosGroup/glslang.git

@@ -6,7 +6,7 @@ namespace Suou
 class CommandBuffer
 {
 public:
-    virtual CommandBuffer(){};
+    virtual ~CommandBuffer(){};
 
 protected:
     CommandBuffer(){};

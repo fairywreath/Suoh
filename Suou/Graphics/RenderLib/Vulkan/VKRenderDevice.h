@@ -11,6 +11,7 @@
 #include "Handlers/VKBufferHandler.h"
 #include "Handlers/VKImageHandler.h"
 #include "Handlers/VKPipelineHandler.h"
+#include "Handlers/VKShaderHandler.h"
 #include "Handlers/VKUploadBufferHandler.h"
 
 namespace Suou
@@ -32,6 +33,9 @@ public:
 
     GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineDescription& desc) override final;
     void destroyGraphicsPipeline(GraphicsPipelineHandle) override final;
+
+    ShaderHandle createShader(const ShaderDescription& desc) override final;
+    void destroyShader(ShaderHandle handle) override final;
 
     void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
                         u64 size) override final;
@@ -57,6 +61,7 @@ private:
     VKBufferHandler mBufferHandler;
     VKUploadBufferHandler mUploadBufferHandler;
     VKImageHandler mImageHandler;
+    VKShaderHandler mShaderHandler;
 
     VkCommandPool mCommandPool;
 
@@ -66,6 +71,7 @@ private:
     friend class VKUploadBufferHandler;
     friend class VKImageHandler;
     friend class VKPipelineHandler;
+    friend class VKShaderHandler;
 };
 
 } // namespace Suou

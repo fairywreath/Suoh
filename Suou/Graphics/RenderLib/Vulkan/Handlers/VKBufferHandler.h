@@ -27,7 +27,7 @@ public:
 
 private:
     using HandleType = type_safe::underlying_type<BufferHandle>;
-    inline HandleType toHandleType(BufferHandle handle) const
+    constexpr HandleType toHandleType(BufferHandle handle) const
     {
         return static_cast<HandleType>(handle);
     }

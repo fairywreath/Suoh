@@ -12,7 +12,8 @@
 namespace Suou
 {
 
-Application::Application() : mIsInitialized(false)
+Application::Application()
+    : mIsInitialized(false)
 {
     init();
 
@@ -30,6 +31,12 @@ Application::Application() : mIsInitialized(false)
     });
     LOG_DEBUG("BufferHandle 2: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf2));
     mRenderDevice->destroyBuffer(buf2);
+
+    ShaderHandle shader = mRenderDevice->createShader({
+        .filePath = "Shaders/triangle_simple.vert",
+    });
+
+    mRenderDevice->destroyShader(shader);
 }
 
 Application::~Application()
