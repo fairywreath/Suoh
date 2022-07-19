@@ -10,7 +10,7 @@ STRONG_TYPEDEF(TextureHandle, u32);
 
 struct TextureDescription
 {
-    const char* path;
+    std::string path;
 };
 
 struct TextureDataDescription

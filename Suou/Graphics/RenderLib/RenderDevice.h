@@ -18,19 +18,18 @@ class RenderDevice
 public:
     virtual ~RenderDevice(){};
 
+    SUOU_NON_COPYABLE(RenderDevice);
+    SUOU_NON_MOVEABLE(RenderDevice);
+
     virtual void destroy() = 0;
 
-    /*
-     * Graphics resource management
-     */
     virtual BufferHandle createBuffer(const BufferDescription& desc) = 0;
     virtual void destroyBuffer(BufferHandle handle) = 0;
 
     virtual ImageHandle createImage(const ImageDescription& desc) = 0;
     virtual void destroyImage(ImageHandle handle) = 0;
 
-    virtual void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size)
-        = 0;
+    virtual void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset, u64 size) = 0;
 
     virtual GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineDescription& desc) = 0;
     virtual void destroyGraphicsPipeline(GraphicsPipelineHandle handle) = 0;

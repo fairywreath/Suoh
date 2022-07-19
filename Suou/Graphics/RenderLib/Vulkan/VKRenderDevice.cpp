@@ -169,7 +169,8 @@ VKRenderDevice::VKRenderDevice(Window* window)
       mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()), mBufferHandler(*this),
       mUploadBufferHandler(*this),
       mImageHandler(*this),
-      mShaderHandler(*this)
+      mShaderHandler(*this),
+      mPipelineHandler(*this)
 {
     init();
 }
@@ -311,11 +312,12 @@ void VKRenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 
 GraphicsPipelineHandle VKRenderDevice::createGraphicsPipeline(const GraphicsPipelineDescription& desc)
 {
-    return GraphicsPipelineHandle(0);
+    return mPipelineHandler.createGraphicsPipeline(desc);
 }
 
-void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle)
+void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle handle)
 {
+    mPipelineHandler.destroyGraphicsPipeline(handle);
 }
 
 ShaderHandle VKRenderDevice::createShader(const ShaderDescription& desc)

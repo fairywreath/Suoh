@@ -3,6 +3,8 @@
 #include <CoreTypes.h>
 #include <StrongTypedef.h>
 
+#include "Shader.h"
+
 namespace Suou
 {
 

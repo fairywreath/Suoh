@@ -32,7 +32,7 @@ public:
     void destroyImage(ImageHandle) override final;
 
     GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineDescription& desc) override final;
-    void destroyGraphicsPipeline(GraphicsPipelineHandle) override final;
+    void destroyGraphicsPipeline(GraphicsPipelineHandle handle) override final;
 
     ShaderHandle createShader(const ShaderDescription& desc) override final;
     void destroyShader(ShaderHandle handle) override final;
@@ -62,6 +62,7 @@ private:
     VKUploadBufferHandler mUploadBufferHandler;
     VKImageHandler mImageHandler;
     VKShaderHandler mShaderHandler;
+    VKPipelineHandler mPipelineHandler;
 
     VkCommandPool mCommandPool;
 
