@@ -43,11 +43,14 @@ private:
     std::vector<VkImage> mImages;
     std::vector<VkImageView> mImageViews;
 
+    // swapchain semaphore, waits for swapchain image to become available
+    VkSemaphore mSwapchainSemaphore;
+
+    // render semaphore
     std::vector<VkSemaphore> mPresentSemaphores;
 
     size_t mImageCount = 0;
     u32 mImageIndex = 0;
-    u32 mFrameIndex = 0;
 };
 
 } // namespace Suou

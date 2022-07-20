@@ -5,7 +5,9 @@
 #include <SuouBase.h>
 #include <Window.h>
 
-#include <RenderLib/RenderDevice.h>
+#include <RenderLib/Vulkan/VKRenderDevice.h>
+
+#include "Rendering/MainRenderer.h"
 
 namespace Suou
 {
@@ -28,7 +30,8 @@ private:
     bool mIsInitialized;
 
     std::unique_ptr<Window> mMainWindow;
-    std::unique_ptr<RenderDevice> mRenderDevice;
+
+    MainRenderer mRenderer;
 };
 
 } // namespace Suou

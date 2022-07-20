@@ -160,17 +160,31 @@ VkSurfaceKHR createVkSurfaceKHRFromGLFW(VkInstance instance, GLFWwindow* window)
     return surface;
 }
 
+static VkResult setDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+{
+    auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+    if (func != nullptr)
+    {
+        return func(device, pNameInfo);
+    }
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 } // anonymous namespace
 
 VKRenderDevice::VKRenderDevice(Window* window)
     : mInstance(createVkInstance()), mDebugMessenger(createVkDebugUtilsMessenger(mInstance)),
       mSurface(createVkSurfaceKHRFromGLFW(mInstance, static_cast<GLFWwindow*>(window->getNativeWindow()))),
       mInitialized(false), mDevice(mInstance, mSurface),
-      mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight()), mBufferHandler(*this),
-      mUploadBufferHandler(*this),
-      mImageHandler(*this),
-      mShaderHandler(*this),
-      mPipelineHandler(*this)
+      mSwapchain(mSurface, mDevice, window->getWidth(), window->getHeight())
+//   mBufferHandler(*this),
+//   mUploadBufferHandler(*this),
+//   mImageHandler(*this),
+//   mShaderHandler(*this),
+//   mPipelineHandler(*this)
 {
     init();
 }
@@ -185,7 +199,7 @@ void VKRenderDevice::init()
     initAllocator();
     initCommands();
 
-    mUploadBufferHandler.init();
+    // mUploadBufferHandler.init();
 }
 
 void VKRenderDevice::initCommands()
@@ -198,6 +212,18 @@ void VKRenderDevice::initCommands()
     };
 
     VK_CHECK(vkCreateCommandPool(mDevice.getLogical(), &commandPoolInfo, nullptr, &mCommandPool));
+
+    mCommandBuffers.resize(mSwapchain.getImageCount());
+
+    const VkCommandBufferAllocateInfo allocInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = nullptr,
+        .commandPool = mCommandPool, // XXX: use different command pool?
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = (u32)mSwapchain.getImageCount(),
+    };
+
+    VK_CHECK(vkAllocateCommandBuffers(mDevice.getLogical(), &allocInfo, mCommandBuffers.data()));
 }
 
 void VKRenderDevice::initAllocator()
@@ -216,12 +242,14 @@ void VKRenderDevice::destroy()
     // XXX: use deletion queue?
     auto device = mDevice.getLogical();
 
-    mUploadBufferHandler.destroy();
+    // mUploadBufferHandler.destroy();
+
+    vkFreeCommandBuffers(mDevice.getLogical(), mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
 
     vkDestroyCommandPool(device, mCommandPool, nullptr);
     vmaDestroyAllocator(mAllocator);
 
-    mBufferHandler.destroy();
+    // mBufferHandler.destroy();
     mSwapchain.destroy();
     mDevice.destroy();
 
@@ -233,30 +261,50 @@ void VKRenderDevice::destroy()
     vkDestroyInstance(mInstance, nullptr);
 }
 
-BufferHandle VKRenderDevice::createBuffer(const BufferDescription& desc)
-{
-    return mBufferHandler.createBuffer(desc);
-}
+// BufferHandle VKRenderDevice::createBuffer(const BufferDescription& desc)
+// {
+//     return mBufferHandler.createBuffer(desc);
+// }
 
-void VKRenderDevice::destroyBuffer(BufferHandle handle)
-{
-    mBufferHandler.destroyBuffer(handle);
-}
+// void VKRenderDevice::destroyBuffer(BufferHandle handle)
+// {
+//     mBufferHandler.destroyBuffer(handle);
+// }
 
-ImageHandle VKRenderDevice::createImage(const ImageDescription& desc)
-{
-    return ImageHandle(0);
-}
+// ImageHandle VKRenderDevice::createImage(const ImageDescription& desc)
+// {
+//     return ImageHandle(0);
+// }
 
-void VKRenderDevice::destroyImage(ImageHandle)
-{
-}
+// void VKRenderDevice::destroyImage(ImageHandle)
+// {
+// }
 
-void VKRenderDevice::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
-                                    u64 size)
-{
-    mUploadBufferHandler.uploadToBuffer(dstBufferHandle, dstOffset, data, srcOffset, size);
-}
+// void VKRenderDevice::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
+//                                     u64 size)
+// {
+//     mUploadBufferHandler.uploadToBuffer(dstBufferHandle, dstOffset, data, srcOffset, size);
+// }
+
+// GraphicsPipelineHandle VKRenderDevice::createGraphicsPipeline(const GraphicsPipelineDescription& desc)
+// {
+//     return mPipelineHandler.createGraphicsPipeline(desc);
+// }
+
+// void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle handle)
+// {
+//     mPipelineHandler.destroyGraphicsPipeline(handle);
+// }
+
+// ShaderHandle VKRenderDevice::createShader(const ShaderDescription& desc)
+// {
+//     return mShaderHandler.createShader(desc);
+// };
+
+// void VKRenderDevice::destroyShader(ShaderHandle handle)
+// {
+//     mShaderHandler.destroyShader(handle);
+// };
 
 VkCommandBuffer VKRenderDevice::beginSingleTimeCommands()
 {
@@ -310,24 +358,50 @@ void VKRenderDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkFreeCommandBuffers(device, mCommandPool, 1, &commandBuffer);
 }
 
-GraphicsPipelineHandle VKRenderDevice::createGraphicsPipeline(const GraphicsPipelineDescription& desc)
+bool VKRenderDevice::setVkObjectName(void* object, VkObjectType objectType, const std::string& name)
 {
-    return mPipelineHandler.createGraphicsPipeline(desc);
+    VkDebugUtilsObjectNameInfoEXT nameInfo = {
+        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        .pNext = nullptr,
+        .objectType = objectType,
+        .objectHandle = (u64)object,
+        .pObjectName = name.c_str()};
+
+    return (setDebugUtilsObjectNameEXT(mInstance, mDevice.getLogical(), &nameInfo) == VK_SUCCESS);
 }
 
-void VKRenderDevice::destroyGraphicsPipeline(GraphicsPipelineHandle handle)
+VkCommandBuffer VKRenderDevice::getCurrentCommandBuffer()
 {
-    mPipelineHandler.destroyGraphicsPipeline(handle);
+    return mCommandBuffers[mSwapchain.getImageIndex()];
 }
 
-ShaderHandle VKRenderDevice::createShader(const ShaderDescription& desc)
+size_t VKRenderDevice::getSwapchainImageIndex()
 {
-    return mShaderHandler.createShader(desc);
-};
+    return mSwapchain.getImageIndex();
+}
 
-void VKRenderDevice::destroyShader(ShaderHandle handle)
+bool VKRenderDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage,
+                                  VkBuffer& buffer, VmaAllocation& allocation)
 {
-    mShaderHandler.destroyShader(handle);
-};
+    const VkBufferCreateInfo bufferInfo = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .size = size,
+        .usage = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+    };
+
+    const VmaAllocationCreateInfo vmaAllocInfo = {
+        .usage = memUsage,
+    };
+
+    VK_CHECK(vmaCreateBuffer(mAllocator, &bufferInfo, &vmaAllocInfo, &buffer, &allocation,
+                             nullptr));
+
+    return true;
+}
 
 } // namespace Suou

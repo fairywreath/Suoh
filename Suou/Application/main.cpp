@@ -1,0 +1,26 @@
+#include <iostream>
+#include <stdexcept>
+
+#include <Logger.h>
+
+#include "Application.h"
+
+using namespace Suou;
+
+int main()
+{
+    try
+    {
+        LOG_SET_OUTPUT(&std::cout);
+        LOG_DEBUG("Starting application...");
+
+        Application app;
+        app.run();
+    }
+    catch (std::exception& e)
+    {
+        LOG_FATAL("EXCEPTION: ", e.what());
+    }
+
+    return 0;
+}

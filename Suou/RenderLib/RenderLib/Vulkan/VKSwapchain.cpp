@@ -79,7 +79,8 @@ static VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabili
 
 } // anonymous namespace
 
-VKSwapchain::VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height) : mDevice(device)
+VKSwapchain::VKSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height)
+    : mDevice(device)
 {
     initSwapchain(surface, device, width, height);
     initSemaphores();
@@ -98,6 +99,8 @@ void VKSwapchain::destroy()
         vkDestroySemaphore(device, semaphore, nullptr);
     }
 
+    vkDestroySemaphore(device, mSwapchainSemaphore, nullptr);
+
     for (auto imageView : mImageViews)
     {
         vkDestroyImageView(device, imageView, nullptr);
@@ -109,7 +112,7 @@ void VKSwapchain::destroy()
 void VKSwapchain::acquireNextImage()
 {
     // XXX: change to match swapchain return codes
-    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mFrameIndex],
+    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mImageIndex],
                                    nullptr, &mImageIndex));
 }
 
@@ -127,11 +130,7 @@ void VKSwapchain::present(VkSemaphore renderSemaphore)
 
     VK_CHECK(vkQueuePresentKHR(mDevice.getPresentQueue(), &presentInfo));
 
-    mFrameIndex++;
-    if (mFrameIndex >= mImageCount)
-    {
-        mFrameIndex = 0;
-    }
+    mImageIndex = (mImageIndex + 1) % mImageCount;
 }
 
 VkImage VKSwapchain::getImage(std::size_t index) const
@@ -170,7 +169,7 @@ size_t VKSwapchain::getImageIndex() const
 
 const VkSemaphore& VKSwapchain::getCurrentPresentSemaphore() const
 {
-    return mPresentSemaphores[mFrameIndex];
+    return mPresentSemaphores[mImageIndex];
 }
 
 void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height)
@@ -256,14 +255,15 @@ void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u3
 
 void VKSwapchain::initSemaphores()
 {
-    mPresentSemaphores.resize(mImageCount);
-
     VkDevice device = mDevice.getLogical();
     VkSemaphoreCreateInfo semaphoreCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         .pNext = nullptr,
     };
 
+    VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &mSwapchainSemaphore));
+
+    mPresentSemaphores.resize(mImageCount);
     for (size_t i = 0; i < mImageCount; i++)
     {
         VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &mPresentSemaphores[i]));

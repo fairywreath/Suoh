@@ -16,27 +16,6 @@ Application::Application()
     : mIsInitialized(false)
 {
     init();
-
-    // test
-    BufferHandle buf = mRenderDevice->createBuffer({
-        .size = 64,
-        .usage = BufferUsage::UNIFORM_BUFFER,
-    });
-    LOG_DEBUG("BufferHandle: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf));
-    mRenderDevice->destroyBuffer(buf);
-
-    BufferHandle buf2 = mRenderDevice->createBuffer({
-        .size = 32,
-        .usage = BufferUsage::VERTEX_BUFFER,
-    });
-    LOG_DEBUG("BufferHandle 2: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf2));
-    mRenderDevice->destroyBuffer(buf2);
-
-    ShaderHandle shader = mRenderDevice->createShader({
-        .filePath = "Shaders/triangle_simple.vert",
-    });
-
-    mRenderDevice->destroyShader(shader);
 }
 
 Application::~Application()
@@ -58,6 +37,8 @@ void Application::run()
     while (!mMainWindow->shouldClose())
     {
         mMainWindow->update();
+
+        mRenderer.render();
     }
 }
 
@@ -75,10 +56,35 @@ void Application::init()
     mMainWindow = std::make_unique<WindowsWindow>(props);
 #endif
 
-    mRenderDevice = std::make_unique<VKRenderDevice>(mMainWindow.get());
+    mRenderer.init(mMainWindow.get());
 
     mIsInitialized = true;
 }
+
+// void Application::setupGraphics()
+// {
+//     // test
+//     BufferHandle buf = mRenderDevice->createBuffer({
+//         .size = 64,
+//         .usage = BufferUsage::UNIFORM_BUFFER,
+//     });
+//     LOG_DEBUG("BufferHandle: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf));
+
+//     BufferHandle buf2 = mRenderDevice->createBuffer({
+//         .size = 32,
+//         .usage = BufferUsage::VERTEX_BUFFER,
+//     });
+//     LOG_DEBUG("BufferHandle 2: ", static_cast<type_safe::underlying_type<BufferHandle>>(buf2));
+
+//     mRenderDevice->destroyBuffer(buf2);
+//     mRenderDevice->destroyBuffer(buf);
+
+//     ShaderHandle shader = mRenderDevice->createShader({
+//         .filePath = "Shaders/triangle_simple.vert",
+//     });
+
+//     mRenderDevice->destroyShader(shader);
+// }
 
 void Application::destroy()
 {

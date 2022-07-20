@@ -101,26 +101,26 @@ void VKUploadBufferHandler::destroyUploadBuffer(UploadBuffer& buffer)
 void VKUploadBufferHandler::uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
                                            u64 size)
 {
-    auto& stagingData = toStagingBufferData(mData.get());
+    // auto& stagingData = toStagingBufferData(mData.get());
 
-    auto uploadBuffer = createUploadBuffer(dstBufferHandle, size);
-    memcpy(uploadBuffer.mappedData, &static_cast<const u8*>(data)[srcOffset], size);
-    destroyUploadBuffer(uploadBuffer);
+    // auto uploadBuffer = createUploadBuffer(dstBufferHandle, size);
+    // memcpy(uploadBuffer.mappedData, &static_cast<const u8*>(data)[srcOffset], size);
+    // destroyUploadBuffer(uploadBuffer);
 
-    // XXX: use external commandbuffer (uploadContext) ???
-    auto commandBuffer = mRenderDevice.beginSingleTimeCommands();
+    // // XXX: use external commandbuffer (uploadContext) ???
+    // auto commandBuffer = mRenderDevice.beginSingleTimeCommands();
 
-    VkBuffer srcBuffer = stagingData.stagingBuffer.buffer;
-    VkBuffer dstBuffer = mRenderDevice.mBufferHandler.getVkBuffer(dstBufferHandle);
-    const VkBufferCopy copyRegion = {
-        .srcOffset = 0, // srtOffset already set in memcpy above, stagingbuffer offset is currently 0
-        .dstOffset = dstOffset,
-        .size = size,
-    };
+    // VkBuffer srcBuffer = stagingData.stagingBuffer.buffer;
+    // VkBuffer dstBuffer = mRenderDevice.mBufferHandler.getVkBuffer(dstBufferHandle);
+    // const VkBufferCopy copyRegion = {
+    //     .srcOffset = 0, // srtOffset already set in memcpy above, stagingbuffer offset is currently 0
+    //     .dstOffset = dstOffset,
+    //     .size = size,
+    // };
 
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    // vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    mRenderDevice.endSingleTimeCommands(commandBuffer);
+    // mRenderDevice.endSingleTimeCommands(commandBuffer);
 }
 
 } // namespace Suou
