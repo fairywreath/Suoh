@@ -5,7 +5,8 @@
 namespace Suou
 {
 
-WindowsWindow::WindowsWindow(const WindowProperties& props) : mWindow(nullptr), mWidth(0), mHeight(0), mTitle("")
+WindowsWindow::WindowsWindow(const WindowProperties& props)
+    : mWindow(nullptr), mWidth(0), mHeight(0), mTitle("")
 {
     init(props);
 }

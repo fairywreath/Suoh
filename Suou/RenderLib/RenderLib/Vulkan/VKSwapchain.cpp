@@ -48,7 +48,7 @@ static VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(const std::vector<VkSurfa
 {
     for (const auto& availableFormat : availableFormats)
     {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
             && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return availableFormat;
@@ -99,8 +99,6 @@ void VKSwapchain::destroy()
         vkDestroySemaphore(device, semaphore, nullptr);
     }
 
-    vkDestroySemaphore(device, mSwapchainSemaphore, nullptr);
-
     for (auto imageView : mImageViews)
     {
         vkDestroyImageView(device, imageView, nullptr);
@@ -112,7 +110,7 @@ void VKSwapchain::destroy()
 void VKSwapchain::acquireNextImage()
 {
     // XXX: change to match swapchain return codes
-    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mImageIndex],
+    VK_CHECK(vkAcquireNextImageKHR(mDevice.getLogical(), mSwapchain, 1000000000, mPresentSemaphores[mFrameIndex],
                                    nullptr, &mImageIndex));
 }
 
@@ -130,7 +128,7 @@ void VKSwapchain::present(VkSemaphore renderSemaphore)
 
     VK_CHECK(vkQueuePresentKHR(mDevice.getPresentQueue(), &presentInfo));
 
-    mImageIndex = (mImageIndex + 1) % mImageCount;
+    mFrameIndex = (mFrameIndex + 1) % mImageCount;
 }
 
 VkImage VKSwapchain::getImage(std::size_t index) const
@@ -169,7 +167,7 @@ size_t VKSwapchain::getImageIndex() const
 
 const VkSemaphore& VKSwapchain::getCurrentPresentSemaphore() const
 {
-    return mPresentSemaphores[mImageIndex];
+    return mPresentSemaphores[mFrameIndex];
 }
 
 void VKSwapchain::initSwapchain(VkSurfaceKHR surface, const VKDevice& device, u32 width, u32 height)
@@ -260,8 +258,6 @@ void VKSwapchain::initSemaphores()
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         .pNext = nullptr,
     };
-
-    VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &mSwapchainSemaphore));
 
     mPresentSemaphores.resize(mImageCount);
     for (size_t i = 0; i < mImageCount; i++)

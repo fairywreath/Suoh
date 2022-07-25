@@ -6,6 +6,7 @@ add_subdirectory(RenderLib)
 add_subdirectory(Platform)
 add_subdirectory(Vendor)
 
+# XXX: shader compiplation does not seem to wrok...
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
   set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
 else()
@@ -33,7 +34,10 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 endforeach(GLSL)
 
 add_custom_target(
-    Shaders
-    DEPENDS ${SPIRV_BINARY_FILES}
-	SOURCES ${GLSL_SOURCE_FILES}
-    )
+  Shaders
+  DEPENDS ${SPIRV_BINARY_FILES}
+  SOURCES ${GLSL_SOURCE_FILES}
+)
+
+file(COPY "${PROJECT_SOURCE_DIR}/Shaders/" DESTINATION "${PROJECT_OUTPUT_DIRECTORY}/Application/")
+

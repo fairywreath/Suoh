@@ -36,9 +36,10 @@ void Application::run()
     // display window
     while (!mMainWindow->shouldClose())
     {
-        mMainWindow->update();
-
+        // LOG_DEBUG("rendering... ");
         mRenderer.render();
+
+        mMainWindow->update();
     }
 }
 

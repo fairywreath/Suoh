@@ -1,5 +1,7 @@
 #include "VKDevice.h"
 
+#include <Logger.h>
+
 #include <set>
 #include <string>
 
@@ -97,7 +99,8 @@ static bool isPhysicalDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surfa
 
 } // anonymous namespace
 
-VKDevice::VKDevice(VkInstance instance, VkSurfaceKHR surface) : mInstance(instance), mSurface(surface)
+VKDevice::VKDevice(VkInstance instance, VkSurfaceKHR surface)
+    : mInstance(instance), mSurface(surface)
 {
     initPhysDevice();
     initLogicalDevice();
@@ -142,7 +145,7 @@ u32 VKDevice::getPresentFamily() const
     return mPresentFamily;
 }
 
-VkPhysicalDeviceProperties VKDevice::getPhysDeviceProperties() const
+const VkPhysicalDeviceProperties& VKDevice::getPhysDeviceProperties() const
 {
     return mPhysDeviceProperties;
 }
@@ -176,6 +179,13 @@ void VKDevice::initPhysDevice()
 
     vkGetPhysicalDeviceProperties(mPhysDevice, &mPhysDeviceProperties);
 
+    vkGetPhysicalDeviceFeatures(mPhysDevice, &mPhysDeviceFeatures);
+    if (!mPhysDeviceFeatures.geometryShader)
+    {
+        LOG_FATAL("Geometry shader not supported!");
+        throw std::runtime_error("Geometry shader not supported!");
+    }
+
     VkPhysicalDeviceVulkan11Features vk11Features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
     };
@@ -186,7 +196,8 @@ void VKDevice::initPhysDevice()
 
     if (!vk11Features.shaderDrawParameters)
     {
-        throw std::runtime_error("VkPhysicalDeviceVulkan11Features.drawShaderParameters not supported!");
+        LOG_FATAL("shaderDrawParameters not supported!");
+        throw std::runtime_error("shaderDrawParameters not supported!");
     }
 }
 
@@ -210,6 +221,7 @@ void VKDevice::initLogicalDevice()
     }
 
     VkPhysicalDeviceFeatures deviceFeatures = {
+        .geometryShader = VK_TRUE,
         .pipelineStatisticsQuery = VK_TRUE,
     };
 

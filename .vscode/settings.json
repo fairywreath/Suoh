@@ -76,6 +76,16 @@
     "numeric": "cpp",
     "queue": "cpp",
     "shared_mutex": "cpp",
-    "xhash": "cpp"
+    "xhash": "cpp",
+    "any": "cpp",
+    "bitset": "cpp",
+    "cinttypes": "cpp",
+    "codecvt": "cpp",
+    "filesystem": "cpp",
+    "random": "cpp",
+    "regex": "cpp",
+    "span": "cpp",
+    "stack": "cpp",
+    "variant": "cpp"
   }
 }

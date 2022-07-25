@@ -2,58 +2,188 @@
 
 #include <vk_mem_alloc.h>
 
+#include <SuouBase.h>
+
 #include "Window.h"
 
-#include "../RenderDevice.h"
 #include "VKDevice.h"
 #include "VKSwapchain.h"
-
-#include "Handlers/VKBufferHandler.h"
-#include "Handlers/VKImageHandler.h"
-#include "Handlers/VKPipelineHandler.h"
-#include "Handlers/VKShaderHandler.h"
-#include "Handlers/VKUploadBufferHandler.h"
 
 namespace Suou
 {
 
-class VKRenderDevice : public RenderDevice
+/*
+ * Temp. implementation of graphics resource types
+ */
+struct Buffer
+{
+    VkBuffer buffer;
+    VmaAllocation allocation;
+};
+
+struct Image
+{
+    VkImage image;
+    VkImageView imageView;
+    VmaAllocation allocation;
+};
+
+struct Texture
+{
+    Image image;
+    VkSampler sampler;
+};
+
+using ShaderBinary = std::vector<u32>;
+
+struct ShaderModule
+{
+    ShaderBinary SPIRV;
+    size_t size;
+    std::string binaryPath;
+
+    VkShaderModule shaderModule;
+};
+
+struct GraphicsPipeline
+{
+    VkRenderPass renderPass;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+};
+
+enum eRenderPassBit : u8
+{
+    eRenderPassBitFirst = 0x01,
+    eRenderPassBitLast = 0x02,
+    eRenderPassBitOffscreen = 0x04,
+    eRenderPassBitOffscreenInternal = 0x08,
+};
+
+struct RenderPassCreateInfo
+{
+    bool clearColor = false;
+    bool clearDepth = false;
+    u8 flags = 0;
+};
+
+/*
+ * Temp. (monolithic) implementation of a vulkan render devoce
+ */
+class VKRenderDevice
 {
 public:
     explicit VKRenderDevice(Window* window);
-    ~VKRenderDevice() override;
+    ~VKRenderDevice();
 
-    void destroy() override final;
+    SUOU_NON_COPYABLE(VKRenderDevice);
+    SUOU_NON_MOVEABLE(VKRenderDevice);
 
-    // BufferHandle createBuffer(const BufferDescription& desc) override final;
-    // void destroyBuffer(BufferHandle handle) override final;
+    void destroy();
 
-    // ImageHandle createImage(const ImageDescription& desc) override final;
-    // void destroyImage(ImageHandle) override final;
+    /*
+     * Misc. device operations
+     */
+    bool submit(const VkCommandBuffer& commandBuffer);
+    bool present();
 
-    // GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineDescription& desc) override final;
-    // void destroyGraphicsPipeline(GraphicsPipelineHandle handle) override final;
-
-    // ShaderHandle createShader(const ShaderDescription& desc) override final;
-    // void destroyShader(ShaderHandle handle) override final;
-
-    // void uploadToBuffer(BufferHandle dstBufferHandle, u64 dstOffset, const void* data, u64 srcOffset,
-    //                     u64 size) override final;
-
-    // non-abstracted direct VUlkan calls for initial graphics implementation
-    bool setVkObjectName(void* object, VkObjectType objectType, const std::string& name);
+    bool deviceWaitIdle();
 
     // returns VkCommandBuffer that corresponds to the current swapchain image
-    VkCommandBuffer getCurrentCommandBuffer();
-    size_t getSwapchainImageIndex();
+    const VkCommandBuffer& getCurrentCommandBuffer();
+    void resetCommandPool();
 
-    bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage,
-                      VkBuffer& buffer, VmaAllocation& allocation);
+    /*
+     * Swapchain operations
+     */
+    size_t getSwapchainImageIndex();
+    size_t getSwapchainImageCount();
+    void swapchainAcquireNextImage();
+
+    /*
+     *  Buffers
+     */
+    bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage, Buffer& buffer);
+
+    // loads 3d model, loads to vertex + indices SSBO
+    bool createTexturedVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset);
+
+    void destroyBuffer(Buffer& buffer);
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    void mapMemory(VmaAllocation allocation, void** data);
+    void unmapMemory(VmaAllocation allocation);
+
+    /*
+     * Images and textures
+     */
+    bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                     VmaMemoryUsage memUsage, Image& image);
+    bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image);
+    bool createTextureSampler(Texture& texture);
+    bool createTextureImage(const std::string& filePath, Texture& texture);
+
+    void destroyImage(Image& image);
+    void destroyTexture(Texture& texture);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
+
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 layerCount, u32 mipLevels);
+    void transitionImageLayourCmd(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
+                                  VkImageLayout newLayout, u32 layerCount, u32 mipLevels);
+
+    /*
+     * Depth images
+     */
+    bool hasStencilComponent(VkFormat format);
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkFormat findDepthFormat();
+    void createDepthResources(u32 width, u32 height, Image& depthImage);
+
+    /*
+     * Descriptor sets
+     */
+    bool createDescriptorPool(u32 uniformBufferCount, u32 storageBufferCount, u32 samplerCount, VkDescriptorPool& descriptorPool);
+    bool createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& layout);
+    bool allocateDescriptorSets(VkDescriptorPool descriptorPool, const std::vector<VkDescriptorSetLayout>& layouts, std::vector<VkDescriptorSet>& descriptorSets);
+    void updateDescriptorSets(u32 descriptorWriteCount, const std::vector<VkWriteDescriptorSet>& descriptorWrites);
+
+    void destroyDescriptorSetLayout(VkDescriptorSetLayout descriptorLayout);
+    void destroyDescriptorPool(VkDescriptorPool descriptorPool);
+
+    /*
+     * Shaders
+     */
+    bool createShader(const std::string& filePath, ShaderModule& shader);
+    void destroyShader(ShaderModule& shader);
+
+    /*
+     * Graphics pipeline
+     */
+    bool createPipelineLayout(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout);
+    bool createColorDepthRenderPass(const RenderPassCreateInfo& createInfo, bool useDepth, VkRenderPass& renderPass, VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM);
+
+    bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
+                                const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPipeline& pipeline);
+    bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
+                                const std::vector<std::string>& shaderFilePaths, VkPipeline& pipeline);
+
+    bool createColorDepthSwapchainFramebuffers(VkRenderPass renderPass, VkImageView depthImageView, std::vector<VkFramebuffer>& swapchainFramebuffers);
+
+    void destroyRenderPass(VkRenderPass renderPass);
+    void destroyPipeline(VkPipeline pipeline);
+    void destroyPipelineLayout(VkPipelineLayout pipelineLayout);
+    void destroyFramebuffer(VkFramebuffer frameBuffer);
+
+    /*
+     * Misc./debug
+     */
+    bool setVkObjectName(void* object, VkObjectType objectType, const std::string& name);
 
 private:
     void init();
     void initCommands();
     void initAllocator();
+    void initSynchronizationObjects();
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -75,17 +205,8 @@ private:
     // temp command buffers, 1 per swapchain image
     std::vector<VkCommandBuffer> mCommandBuffers;
 
-    // VKBufferHandler mBufferHandler;
-    // VKUploadBufferHandler mUploadBufferHandler;
-    // VKImageHandler mImageHandler;
-    // VKShaderHandler mShaderHandler;
-    // VKPipelineHandler mPipelineHandler;
-
-    friend class VKBufferHandler;
-    friend class VKUploadBufferHandler;
-    friend class VKImageHandler;
-    friend class VKPipelineHandler;
-    friend class VKShaderHandler;
+    // synchronization objects
+    VkSemaphore mRenderSemaphore;
 };
 
 } // namespace Suou

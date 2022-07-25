@@ -17,10 +17,40 @@ public:
     void render();
 
 private:
-    bool fillCommandBuffer();
+    static constexpr VkClearColorValue ClearValueColor = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    struct UniformBuffer
+    {
+        mat4 mvp;
+    } ubo;
+
+    struct AllocatedBuffer
+    {
+        VkBuffer buffer;
+        VmaAllocation allocation;
+    };
+
+    struct AllocatedImage
+    {
+        VkImage image;
+        VkImageView imageView;
+        VmaAllocation allocation;
+    };
+
+    struct AllocatedTexture
+    {
+        AllocatedImage image;
+        VkSampler sampler;
+    };
 
 private:
-    static constexpr VkClearColorValue ClearValueColor = {1.0f, 1.0f, 1.0f, 1.0f};
+    bool fillCommandBuffer();
+
+    bool createUniformBuffers();
+    void updateUniformBuffer(u32 imageIndex, const UniformBuffer& ubo);
+
+    bool createDescriptors();
+    void updateDescriptors();
 
 private:
     std::unique_ptr<VKRenderDevice> mRenderDevice;
@@ -37,10 +67,21 @@ private:
     // 3. Descriptors sets and layout
     VkDescriptorSetLayout mDescriptorSetLayout;
     VkDescriptorPool mDescriptorPool;
-    std::vector<VkDescriptorSet> mDescriptorSets;
+    std::vector<VkDescriptorSet> mDescriptorSets; // 1 descriptor set per swapchain image for now
+
+    // 4. UBO to store mvp matrix
+    std::vector<Buffer> mUniformBuffers;
+    Buffer mStorageBuffer;
+
+    // 5. (color) Texture
+    Texture mTexture;
+
+    // 6. Depth buffer
+    Image mDepthImage;
 
     // misc mesh/model data
     size_t mVertexBufferSize;
+    size_t mIndexBufferOffset; // offset of index buffer in SSBO
     size_t mIndexBufferSize;
 };
 

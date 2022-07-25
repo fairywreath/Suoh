@@ -28,7 +28,7 @@ public:
     VkQueue getPresentQueue() const;
     u32 getPresentFamily() const;
 
-    VkPhysicalDeviceProperties getPhysDeviceProperties() const;
+    const VkPhysicalDeviceProperties& getPhysDeviceProperties() const;
 
 private:
     void initPhysDevice();
@@ -48,6 +48,7 @@ private:
     u32 mPresentFamily{};
 
     VkPhysicalDeviceProperties mPhysDeviceProperties;
+    VkPhysicalDeviceFeatures mPhysDeviceFeatures;
     VkPhysicalDeviceFeatures2 mPhysDeviceFeatures2;
 };
 

@@ -17,7 +17,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Vulkan::Headers
     glslang
     SPIRV
+    stb_image
+    assimp
 )
+
 
 # manually add DefaultTBuiltinresource....., maybe initialize this inside this project?
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/../Vendor/glslang/StandAlone/ResourceLimits.cpp)
