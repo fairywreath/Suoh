@@ -1,6 +1,11 @@
 #pragma once
 
 #include <RenderLib/Vulkan/VKRenderDevice.h>
+#include <SuouBase.h>
+
+#include "ClearRenderer.h"
+#include "FinishRenderer.h"
+#include "ModelRenderer.h"
 
 namespace Suou
 {
@@ -8,81 +13,35 @@ namespace Suou
 class MainRenderer
 {
 public:
-    MainRenderer();
-    virtual ~MainRenderer();
+    MainRenderer(){};
+
+    ~MainRenderer() = default;
+    SUOU_NON_COPYABLE(MainRenderer);
+    SUOU_NON_MOVEABLE(MainRenderer);
 
     void init(Window* window);
-    void destroy();
 
     void render();
 
 private:
-    static constexpr VkClearColorValue ClearValueColor = {1.0f, 1.0f, 1.0f, 1.0f};
-
     struct UniformBuffer
     {
         mat4 mvp;
     } ubo;
 
-    struct AllocatedBuffer
-    {
-        VkBuffer buffer;
-        VmaAllocation allocation;
-    };
-
-    struct AllocatedImage
-    {
-        VkImage image;
-        VkImageView imageView;
-        VmaAllocation allocation;
-    };
-
-    struct AllocatedTexture
-    {
-        AllocatedImage image;
-        VkSampler sampler;
-    };
+private:
+    void update();
+    void composeFrame();
 
 private:
-    bool fillCommandBuffer();
+    Window* mWindow{nullptr};
+    std::unique_ptr<VKRenderDevice> mRenderDevice{nullptr};
 
-    bool createUniformBuffers();
-    void updateUniformBuffer(u32 imageIndex, const UniformBuffer& ubo);
+    std::unique_ptr<ModelRenderer> mModelRenderer{nullptr};
+    std::unique_ptr<ClearRenderer> mClearRenderer{nullptr};
+    std::unique_ptr<FinishRenderer> mFinishRenderer{nullptr};
 
-    bool createDescriptors();
-    void updateDescriptors();
-
-private:
-    std::unique_ptr<VKRenderDevice> mRenderDevice;
-    Window* mWindow;
-
-    // 1. No command buffer object yet, used pre-allocated commandbuffer from render device
-
-    // 2. Graphics pipeline and render pass
-    VkRenderPass mRenderPass;
-    std::vector<VkFramebuffer> mSwapchainFramebuffers; // have this inside swapchain itself?
-    VkPipelineLayout mPipelineLayout;
-    VkPipeline mGraphicsPipeline;
-
-    // 3. Descriptors sets and layout
-    VkDescriptorSetLayout mDescriptorSetLayout;
-    VkDescriptorPool mDescriptorPool;
-    std::vector<VkDescriptorSet> mDescriptorSets; // 1 descriptor set per swapchain image for now
-
-    // 4. UBO to store mvp matrix
-    std::vector<Buffer> mUniformBuffers;
-    Buffer mStorageBuffer;
-
-    // 5. (color) Texture
-    Texture mTexture;
-
-    // 6. Depth buffer
-    Image mDepthImage;
-
-    // misc mesh/model data
-    size_t mVertexBufferSize;
-    size_t mIndexBufferOffset; // offset of index buffer in SSBO
-    size_t mIndexBufferSize;
+    std::vector<RendererBase*> mRenderers;
 };
 
 } // namespace Suou

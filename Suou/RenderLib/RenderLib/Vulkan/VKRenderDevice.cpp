@@ -211,11 +211,11 @@ VKRenderDevice::~VKRenderDevice()
 
 void VKRenderDevice::init()
 {
+    glslang_initialize_process();
+
     initAllocator();
     initCommands();
     initSynchronizationObjects();
-
-    glslang_initialize_process();
 }
 
 void VKRenderDevice::initCommands()
@@ -264,8 +264,6 @@ void VKRenderDevice::initSynchronizationObjects()
 
 void VKRenderDevice::destroy()
 {
-    glslang_finalize_process();
-
     auto device = mDevice.getLogical();
 
     vkFreeCommandBuffers(mDevice.getLogical(), mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
@@ -284,6 +282,8 @@ void VKRenderDevice::destroy()
         destroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
     }
     vkDestroyInstance(mInstance, nullptr);
+
+    glslang_finalize_process();
 }
 
 VkCommandBuffer VKRenderDevice::beginSingleTimeCommands()
@@ -538,6 +538,14 @@ void VKRenderDevice::mapMemory(VmaAllocation allocation, void** data)
 void VKRenderDevice::unmapMemory(VmaAllocation allocation)
 {
     vmaUnmapMemory(mAllocator, allocation);
+}
+
+void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, const size_t dataSize)
+{
+    void* mappedData = nullptr;
+    vmaMapMemory(mAllocator, buffer.allocation, &mappedData);
+    memcpy(mappedData, data, dataSize);
+    vmaUnmapMemory(mAllocator, buffer.allocation);
 }
 
 bool VKRenderDevice::createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,

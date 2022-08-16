@@ -1,7 +1,7 @@
 #version 460
 
-// layout(location = 0) out vec3 fragColor;
-layout(location = 2) out vec2 uv;
+layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec2 uv;
 
 struct VertexData {
     float x;
@@ -40,6 +40,6 @@ void main()
 
     gl_Position = ubo.mvp * vec4(pos, 1.0);
 
-    // fragColor = pos;
+    fragColor = pos;
     uv = vec2(vertex.u, vertex.v);
 }

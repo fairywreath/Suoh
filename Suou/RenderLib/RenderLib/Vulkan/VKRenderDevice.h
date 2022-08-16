@@ -23,8 +23,8 @@ struct Buffer
 
 struct Image
 {
-    VkImage image;
-    VkImageView imageView;
+    VkImage image = VK_NULL_HANDLE;
+    VkImageView imageView = VK_NULL_HANDLE;
     VmaAllocation allocation;
 };
 
@@ -113,6 +113,8 @@ public:
 
     void mapMemory(VmaAllocation allocation, void** data);
     void unmapMemory(VmaAllocation allocation);
+
+    void uploadBufferData(Buffer& buffer, const void* data, const size_t dataSize);
 
     /*
      * Images and textures
