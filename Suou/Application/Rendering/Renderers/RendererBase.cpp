@@ -1,5 +1,7 @@
 #include "RendererBase.h"
 
+#include <Logger.h>
+
 #include <array>
 
 namespace Suou

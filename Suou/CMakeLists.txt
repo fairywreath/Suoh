@@ -1,4 +1,6 @@
-project(engine VERSION 1.0.0 DESCRIPTION "Suou engine")
+project(Suou VERSION 1.0.0 DESCRIPTION "Suou engine")
+
+find_package(Vulkan REQUIRED)
 
 add_subdirectory(Core)
 add_subdirectory(Application)

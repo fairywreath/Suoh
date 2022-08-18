@@ -65,6 +65,7 @@ void ModelRenderer::loadModel(const std::string& modelFile, const std::string& t
                                               "../../../Suou/Shaders/Simple.geom",
                                               "../../../Suou/Shaders/Simple.frag",
                                           },
+                                          VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
                                           mGraphicsPipeline);
     mRenderDevice->createColorDepthSwapchainFramebuffers(mRenderPass, mDepthImage.imageView, mSwapchainFramebuffers);
 }
@@ -126,7 +127,7 @@ void ModelRenderer::createDescriptors(size_t uniformDataSize)
     mRenderDevice->allocateDescriptorSets(mDescriptorPool, layouts, mDescriptorSets);
 
     // update the descriptor writes
-    for (size_t i = 0; i < mRenderDevice->getSwapchainImageCount(); i++)
+    for (auto i = 0; i < mRenderDevice->getSwapchainImageCount(); i++)
     {
         const VkDescriptorBufferInfo uboInfo = {
             .buffer = mUniformBuffers[i].buffer,

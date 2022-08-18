@@ -175,7 +175,7 @@ VkSurfaceKHR createVkSurfaceKHRFromGLFW(VkInstance instance, GLFWwindow* window)
     VkSurfaceKHR surface;
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to craete window surface");
+        throw std::runtime_error("failed to create window surface");
     }
     return surface;
 }
@@ -191,6 +191,33 @@ static VkResult setDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device,
     {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
+}
+
+u32 bytesPerTexFormat(VkFormat fmt)
+{
+    switch (fmt)
+    {
+    case VK_FORMAT_R8_SINT:
+    case VK_FORMAT_R8_UNORM:
+        return 1;
+    case VK_FORMAT_R16_SFLOAT:
+        return 2;
+    case VK_FORMAT_R16G16_SFLOAT:
+        return 4;
+    case VK_FORMAT_R16G16_SNORM:
+        return 4;
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return 4;
+    case VK_FORMAT_R8G8B8A8_UNORM:
+        return 4;
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return 4 * sizeof(uint16_t);
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return 4 * sizeof(float);
+    default:
+        break;
+    }
+    return 0;
 }
 
 } // anonymous namespace
@@ -549,17 +576,35 @@ void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, const si
 }
 
 bool VKRenderDevice::createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                                 VmaMemoryUsage memUsage, Image& image)
+                                 VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags)
 {
+    // const VkImageCreateInfo imageInfo = {
+    //     .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+    //     .pNext = nullptr,
+    //     .flags = flags,
+    //     .imageType = VK_IMAGE_TYPE_2D,
+    //     .format = format,
+    //     .extent = VkExtent3D{.width = width, .height = height, .depth = 1},
+    //     .mipLevels = 1,
+    //     .arrayLayers = 1,
+    //     .samples = VK_SAMPLE_COUNT_1_BIT,
+    //     .tiling = tiling,
+    //     .usage = usage,
+    //     .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    //     .queueFamilyIndexCount = 0,
+    //     .pQueueFamilyIndices = nullptr,
+    //     .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    // };
+
     const VkImageCreateInfo imageInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = nullptr,
-        .flags = 0,
+        .flags = flags,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = format,
         .extent = VkExtent3D{.width = width, .height = height, .depth = 1},
         .mipLevels = 1,
-        .arrayLayers = 1,
+        .arrayLayers = (u32)((flags == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? 6 : 1),
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = tiling,
         .usage = usage,
@@ -572,6 +617,11 @@ bool VKRenderDevice::createImage(u32 width, u32 height, VkFormat format, VkImage
     VmaAllocationCreateInfo allocInfo = {
         .usage = memUsage,
     };
+
+    // if (vmaCreateImage(mAllocator, &imageInfo, &allocInfo, &image.image, &image.allocation, nullptr) != VK_SUCCESS)
+    // {
+    //     LOG_ERROR("Image creation faield!");
+    // }
 
     VK_CHECK(vmaCreateImage(mAllocator, &imageInfo, &allocInfo, &image.image, &image.allocation, nullptr));
 
@@ -627,7 +677,7 @@ bool VKRenderDevice::createTextureSampler(Texture& texture)
     return true;
 }
 
-void VKRenderDevice::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height)
+void VKRenderDevice::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height, u32 layerCount)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -639,7 +689,7 @@ void VKRenderDevice::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .mipLevel = 0,
             .baseArrayLayer = 0,
-            .layerCount = 1,
+            .layerCount = layerCount,
         },
         .imageOffset = VkOffset3D{.x = 0, .y = 0, .z = 0},
         .imageExtent = VkExtent3D{.width = width, .height = height, .depth = 1},
@@ -898,29 +948,41 @@ bool VKRenderDevice::createTextureImage(const std::string& filePath, Texture& te
         return false;
     }
 
-    VkDeviceSize imageSize = texWidth * texHeight * sizeof(int);
+    const auto format = VK_FORMAT_R8G8B8A8_UNORM;
+
+    createImage(texWidth, texHeight, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VMA_MEMORY_USAGE_GPU_ONLY, texture.image);
+    updateTextureImage(texture.image, texWidth, texHeight, format, pixels);
+
+    stbi_image_free(pixels);
+
+    return true;
+}
+
+bool VKRenderDevice::createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount, VkImageCreateFlags createFlags)
+{
+    createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, image, createFlags);
+
+    return updateTextureImage(image, width, height, format, data, layerCount);
+}
+
+bool VKRenderDevice::updateTextureImage(Image& image, u32 width, u32 height, VkFormat format, const void* imageData, u32 layerCount, VkImageLayout sourceImageLayout)
+{
+    u32 bytesPerPixel = bytesPerTexFormat(format);
+
+    VkDeviceSize layerSize = width * height * bytesPerPixel;
+    VkDeviceSize imageSize = layerSize * layerCount;
 
     Buffer stagingBuffer;
-    // VMA_MEMORY_USAGE_CPU_ONLY: writeable by CPU, readable by GPU
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer);
+    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer);
 
-    void* data;
-    mapMemory(stagingBuffer.allocation, &data);
-    memcpy(data, pixels, (size_t)imageSize);
-    unmapMemory(stagingBuffer.allocation);
+    uploadBufferData(stagingBuffer, imageData, imageSize);
 
-    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, texture.image);
-
-    transitionImageLayout(texture.image.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 1);
-
-    copyBufferToImage(stagingBuffer.buffer, texture.image.image, (u32)texWidth, (u32)texHeight);
-
-    transitionImageLayout(texture.image.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 1);
+    transitionImageLayout(image.image, format, sourceImageLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layerCount, 1);
+    copyBufferToImage(stagingBuffer.buffer, image.image, static_cast<u32>(width), static_cast<u32>(height), layerCount);
+    transitionImageLayout(image.image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, layerCount);
 
     destroyBuffer(stagingBuffer);
-    stbi_image_free(pixels);
 
     return true;
 }
@@ -1298,6 +1360,38 @@ bool VKRenderDevice::createPipelineLayout(const VkDescriptorSetLayout& descripto
     return true;
 }
 
+bool VKRenderDevice::createPipelineLayoutWithConstants(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout, u32 vertexConstSize, u32 fragConstSize)
+{
+    const VkPushConstantRange ranges[] = {
+        {
+            VK_SHADER_STAGE_VERTEX_BIT, // stageFlags
+            0,                          // offset
+            vertexConstSize             // size
+        },
+
+        {
+            VK_SHADER_STAGE_FRAGMENT_BIT, // stageFlags
+            vertexConstSize,              // offset
+            fragConstSize                 // size
+        },
+    };
+
+    u32 constSize = (vertexConstSize > 0) + (fragConstSize > 0);
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .setLayoutCount = 1,
+        .pSetLayouts = &descriptorLayout,
+        .pushConstantRangeCount = constSize,
+        .pPushConstantRanges = (constSize == 0) ? nullptr : (vertexConstSize > 0 ? ranges : &ranges[1])};
+
+    VK_CHECK(vkCreatePipelineLayout(mDevice.getLogical(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
+
+    return true;
+}
+
 bool VKRenderDevice::createColorDepthRenderPass(const RenderPassCreateInfo& createInfo, bool useDepth, VkRenderPass& renderPass, VkFormat colorFormat)
 {
     const bool offscreenInternal = createInfo.flags & eRenderPassBit::eRenderPassBitOffscreenInternal;
@@ -1415,7 +1509,8 @@ bool VKRenderDevice::createColorDepthRenderPass(const RenderPassCreateInfo& crea
 }
 
 bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-                                            const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPipeline& pipeline)
+                                            const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPrimitiveTopology topology, VkPipeline& pipeline,
+                                            bool useDepth, bool useBlending, bool dynamicScissorState)
 {
     const VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -1424,7 +1519,7 @@ bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass 
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .topology = topology,
         .primitiveRestartEnable = VK_FALSE,
     };
 
@@ -1468,11 +1563,14 @@ bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass 
         .minSampleShading = 1.0f,
     };
 
-    /*
-     * Blending, always disabled for now
-     */
     const VkPipelineColorBlendAttachmentState colorBlendAttachment = {
-        .blendEnable = VK_FALSE,
+        .blendEnable = VK_TRUE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .colorBlendOp = VK_BLEND_OP_ADD,
+        .srcAlphaBlendFactor = useBlending ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : VK_BLEND_FACTOR_ONE,
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .alphaBlendOp = VK_BLEND_OP_ADD,
         .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
@@ -1482,17 +1580,27 @@ bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass 
         .logicOp = VK_LOGIC_OP_COPY,
         .attachmentCount = 1,
         .pAttachments = &colorBlendAttachment,
-        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
-    };
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f}};
 
+    // depth/stencil state
     const VkPipelineDepthStencilStateCreateInfo depthStencil = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_TRUE,
+        .depthTestEnable = static_cast<VkBool32>(useDepth ? VK_TRUE : VK_FALSE),
+        .depthWriteEnable = static_cast<VkBool32>(useDepth ? VK_TRUE : VK_FALSE),
         .depthCompareOp = VK_COMPARE_OP_LESS,
         .depthBoundsTestEnable = VK_FALSE,
         .minDepthBounds = 0.0f,
         .maxDepthBounds = 1.0f,
+    };
+
+    // dynamic state
+    VkDynamicState dynamicStateElt = VK_DYNAMIC_STATE_SCISSOR;
+    const VkPipelineDynamicStateCreateInfo dynamicState = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = 1,
+        .pDynamicStates = &dynamicStateElt,
     };
 
     const VkGraphicsPipelineCreateInfo pipelineInfo = {
@@ -1505,9 +1613,9 @@ bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass 
         .pViewportState = &viewportState,
         .pRasterizationState = &rasterizationState,
         .pMultisampleState = &multisampleState,
-        .pDepthStencilState = &depthStencil,
+        .pDepthStencilState = useDepth ? &depthStencil : nullptr,
         .pColorBlendState = &colorBlending,
-        .pDynamicState = nullptr,
+        .pDynamicState = dynamicScissorState ? &dynamicState : nullptr,
         .layout = pipelineLayout,
         .renderPass = renderPass,
         .subpass = 0,
@@ -1542,7 +1650,8 @@ static VkShaderStageFlagBits glslangShaderStageToVulkan(glslang_stage_t sh)
 }
 
 bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-                                            const std::vector<std::string>& shaderFilePaths, VkPipeline& pipeline)
+                                            const std::vector<std::string>& shaderFilePaths, VkPrimitiveTopology topology, VkPipeline& pipeline,
+                                            bool useDepth, bool useBlending, bool dynamicScissorState)
 {
     std::vector<ShaderModule> shaderModules;
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -1569,7 +1678,7 @@ bool VKRenderDevice::createGraphicsPipeline(u32 width, u32 height, VkRenderPass 
         };
     }
 
-    createGraphicsPipeline(width, height, renderPass, pipelineLayout, shaderStages, pipeline);
+    createGraphicsPipeline(width, height, renderPass, pipelineLayout, shaderStages, topology, pipeline, useDepth, useBlending, dynamicScissorState);
 
     for (auto& shader : shaderModules)
     {

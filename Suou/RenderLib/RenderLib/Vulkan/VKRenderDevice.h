@@ -120,16 +120,19 @@ public:
      * Images and textures
      */
     bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                     VmaMemoryUsage memUsage, Image& image);
+                     VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags = 0);
     bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image);
     bool createTextureSampler(Texture& texture);
     bool createTextureImage(const std::string& filePath, Texture& texture);
 
+    bool createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount = 1, VkImageCreateFlags createFlags = 0);
+    bool updateTextureImage(Image& image, u32 width, u32 height, VkFormat format, const void* imageData, u32 layerCount = 1, VkImageLayout sourceImageLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+
     void destroyImage(Image& image);
     void destroyTexture(Texture& texture);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height, u32 layerCount = 1);
 
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 layerCount, u32 mipLevels);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 layerCount = 1, u32 mipLevels = 1);
     void transitionImageLayourCmd(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                   VkImageLayout newLayout, u32 layerCount, u32 mipLevels);
 
@@ -162,12 +165,16 @@ public:
      * Graphics pipeline
      */
     bool createPipelineLayout(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout);
+    bool createPipelineLayoutWithConstants(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout, u32 vertexConstSize, u32 fragConstSize);
+
     bool createColorDepthRenderPass(const RenderPassCreateInfo& createInfo, bool useDepth, VkRenderPass& renderPass, VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM);
 
     bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-                                const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPipeline& pipeline);
+                                const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPrimitiveTopology topology, VkPipeline& pipeline,
+                                bool useDepth = true, bool useBlending = true, bool dynamicScissorState = false);
     bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-                                const std::vector<std::string>& shaderFilePaths, VkPipeline& pipeline);
+                                const std::vector<std::string>& shaderFilePaths, VkPrimitiveTopology topology, VkPipeline& pipeline,
+                                bool useDepth = true, bool useBlending = true, bool dynamicScissorState = false);
 
     bool createColorDepthSwapchainFramebuffers(VkRenderPass renderPass, VkImageView depthImageView, std::vector<VkFramebuffer>& swapchainFramebuffers);
 

@@ -22,3 +22,6 @@
 [submodule "Suou/Vendor/assimp"]
 	path = Suou/Vendor/assimp
 	url = git@github.com:assimp/assimp.git
+[submodule "Suou/Vendor/imgui"]
+	path = Suou/Vendor/imgui
+	url = git@github.com:ocornut/imgui.git

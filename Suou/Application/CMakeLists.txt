@@ -10,6 +10,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	core
 	render-lib
 	platform
+	imgui
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "suoupch.h")

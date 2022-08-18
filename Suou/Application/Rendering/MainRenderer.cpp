@@ -15,16 +15,25 @@ void MainRenderer::init(Window* window)
     mRenderDevice = std::make_unique<VKRenderDevice>(window);
 
     mModelRenderer = std::make_unique<ModelRenderer>(mRenderDevice.get(), mWindow);
-    mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "resources/rubber_duck/textures/Duck_baseColor.png", sizeof(UniformBuffer));
+    mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "resources/rubber_duck/textures/Duck_baseColor.png", sizeof(ModelUniformBuffer));
 
     mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), mWindow, mModelRenderer->getDepthImage());
     mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), mWindow, mModelRenderer->getDepthImage());
+    mCanvasRenderer = std::make_unique<CanvasRenderer>(mRenderDevice.get(), mWindow, mModelRenderer->getDepthImage());
+
+    ImGui::CreateContext();
+    mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), mWindow);
 
     mRenderers = {
         mClearRenderer.get(),
         mModelRenderer.get(),
+        mCanvasRenderer.get(),
+        // mGuiRenderer.get(),
         mFinishRenderer.get(),
     };
+
+    // mCanvasRenderer->drawLine({-1.0f, -1.0f, 0.5f}, {1.0f, 1.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f});
+    // mCanvasRenderer->updateBuffer();
 }
 
 void MainRenderer::render()
@@ -57,11 +66,12 @@ void MainRenderer::update()
         vec3(0.0f, 1.0f, 0.0f));
     const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
 
-    const UniformBuffer ubo = {
+    const ModelUniformBuffer ubo = {
         .mvp = p * m1,
     };
 
     mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
+    // mCanvasRenderer->updateUniformBuffer(ubo.mvp, 0);
 }
 
 void MainRenderer::composeFrame()
