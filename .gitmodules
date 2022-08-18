@@ -1,27 +1,27 @@
-[submodule "Suou/Vendor/type_safe"]
-	path = Suou/Vendor/type_safe
+[submodule "Suoh/Vendor/type_safe"]
+	path = Suoh/Vendor/type_safe
 	url = git@github.com:foonathan/type_safe.git
-[submodule "Suou/Vendor/glfw"]
-	path = Suou/Vendor/glfw
+[submodule "Suoh/Vendor/glfw"]
+	path = Suoh/Vendor/glfw
 	url = git@github.com:glfw/glfw.git
-[submodule "Suou/Vendor/vma"]
-	path = Suou/Vendor/vma
+[submodule "Suoh/Vendor/vma"]
+	path = Suoh/Vendor/vma
 	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "Suou/Vendor/Vulkan-Headers"]
-	path = Suou/Vendor/Vulkan-Headers
+[submodule "Suoh/Vendor/Vulkan-Headers"]
+	path = Suoh/Vendor/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "Suou/Vendor/glslang"]
-	path = Suou/Vendor/glslang
+[submodule "Suoh/Vendor/glslang"]
+	path = Suoh/Vendor/glslang
 	url = git@github.com:KhronosGroup/glslang.git
-[submodule "Suou/Vendor/glm"]
-	path = Suou/Vendor/glm
+[submodule "Suoh/Vendor/glm"]
+	path = Suoh/Vendor/glm
 	url = git@github.com:g-truc/glm.git
-[submodule "Suou/Vendor/stb_image"]
-	path = Suou/Vendor/stb_image
+[submodule "Suoh/Vendor/stb_image"]
+	path = Suoh/Vendor/stb_image
 	url = git@github.com:nothings/stb.git
-[submodule "Suou/Vendor/assimp"]
-	path = Suou/Vendor/assimp
+[submodule "Suoh/Vendor/assimp"]
+	path = Suoh/Vendor/assimp
 	url = git@github.com:assimp/assimp.git
-[submodule "Suou/Vendor/imgui"]
-	path = Suou/Vendor/imgui
+[submodule "Suoh/Vendor/imgui"]
+	path = Suoh/Vendor/imgui
 	url = git@github.com:ocornut/imgui.git
