@@ -9,6 +9,8 @@
 #include "Renderers/GuiRenderer.h"
 #include "Renderers/ModelRenderer.h"
 
+#include "Camera.h"
+
 namespace Suoh
 {
 
@@ -17,11 +19,13 @@ class MainRenderer
 public:
     MainRenderer() = default;
     ~MainRenderer() = default;
-    Suoh_NON_COPYABLE(MainRenderer);
-    Suoh_NON_MOVEABLE(MainRenderer);
+    SUOH_NON_COPYABLE(MainRenderer);
+    SUOH_NON_MOVEABLE(MainRenderer);
 
     void init(Window* window);
     void render();
+
+    void setCamera(Camera& camera);
 
 private:
     struct ModelUniformBuffer
@@ -43,6 +47,8 @@ private:
     std::unique_ptr<GuiRenderer> mGuiRenderer{nullptr};
 
     std::vector<RendererBase*> mRenderers;
+
+    Camera* mCamera{nullptr};
 };
 
 } // namespace Suoh

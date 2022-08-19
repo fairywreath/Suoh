@@ -4,7 +4,7 @@
 
 #include <SuohBase.h>
 
-#include "Window.h"
+#include "Window/Window.h"
 
 #include "VKDevice.h"
 #include "VKSwapchain.h"
@@ -76,8 +76,8 @@ public:
     explicit VKRenderDevice(Window* window);
     ~VKRenderDevice();
 
-    Suoh_NON_COPYABLE(VKRenderDevice);
-    Suoh_NON_MOVEABLE(VKRenderDevice);
+    SUOH_NON_COPYABLE(VKRenderDevice);
+    SUOH_NON_MOVEABLE(VKRenderDevice);
 
     void destroy();
 

@@ -51,6 +51,11 @@ void MainRenderer::render()
     mRenderDevice->deviceWaitIdle();
 }
 
+void MainRenderer::setCamera(Camera& camera)
+{
+    mCamera = &camera;
+}
+
 void MainRenderer::update()
 {
     /*
@@ -66,8 +71,10 @@ void MainRenderer::update()
         vec3(0.0f, 1.0f, 0.0f));
     const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
 
+    const mat4 view = mCamera->getViewMatrix();
+
     const ModelUniformBuffer ubo = {
-        .mvp = p * m1,
+        .mvp = p * view * m1,
     };
 
     mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));

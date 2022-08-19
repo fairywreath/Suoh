@@ -3,14 +3,42 @@
 #include <memory>
 
 #include <SuohBase.h>
-#include <Window.h>
+#include <Window/Window.h>
 
 #include <RenderLib/Vulkan/VKRenderDevice.h>
 
+#include "Rendering/Camera.h"
 #include "Rendering/MainRenderer.h"
 
 namespace Suoh
 {
+
+class FpsCameraWindowObserver : public WindowObserver
+{
+public:
+    explicit FpsCameraWindowObserver(Window& window);
+
+    void onCursorPos(double x, double y) override;
+    void onMouseButton(int key, int action, int mods) override;
+    void onKey(int key, int scancode, int action, int mods) override;
+    void onResize(int width, int height) override;
+    void onScroll(double xoffset, double yoffset) override;
+
+    FirstPersonCameraController& getCameraController();
+
+    void update(float deltaSeconds);
+
+private:
+    struct MouseState
+    {
+        vec2 position{0.0f};
+        bool pressedLeft{false};
+    } mouseState;
+
+private:
+    Window& mWindow;
+    FirstPersonCameraController mCameraController;
+};
 
 class Application
 {
@@ -18,8 +46,8 @@ public:
     Application();
     ~Application();
 
-    Suoh_NON_COPYABLE(Application);
-    Suoh_NON_MOVEABLE(Application);
+    SUOH_NON_COPYABLE(Application);
+    SUOH_NON_MOVEABLE(Application);
 
     void run();
 
@@ -29,7 +57,11 @@ public:
 private:
     bool mIsInitialized;
 
-    std::unique_ptr<Window> mMainWindow;
+    // std::unique_ptr<Window> mMainWindow;
+    Window mMainWindow;
+
+    FpsCameraWindowObserver mFpsCamWindowObserver;
+    Camera mCamera;
 
     MainRenderer mRenderer;
 };

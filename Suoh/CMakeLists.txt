@@ -5,7 +5,6 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(Core)
 add_subdirectory(Application)
 add_subdirectory(RenderLib)
-add_subdirectory(Platform)
 add_subdirectory(Vendor)
 
 # XXX: shader compiplation does not seem to wrok...

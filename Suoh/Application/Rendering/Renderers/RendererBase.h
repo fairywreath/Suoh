@@ -13,8 +13,8 @@ class RendererBase
 public:
     virtual ~RendererBase() = default;
 
-    Suoh_NON_COPYABLE(RendererBase);
-    Suoh_NON_MOVEABLE(RendererBase);
+    SUOH_NON_COPYABLE(RendererBase);
+    SUOH_NON_MOVEABLE(RendererBase);
 
     virtual void recordCommands(VkCommandBuffer commandBuffer) = 0;
 
