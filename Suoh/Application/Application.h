@@ -13,31 +13,14 @@
 namespace Suoh
 {
 
-class FpsCameraWindowObserver : public WindowObserver
+class GuiWindowObserver : public WindowObserver
 {
 public:
-    explicit FpsCameraWindowObserver(Window& window);
-
     void onCursorPos(double x, double y) override;
     void onMouseButton(int key, int action, int mods) override;
     void onKey(int key, int scancode, int action, int mods) override;
     void onResize(int width, int height) override;
     void onScroll(double xoffset, double yoffset) override;
-
-    FirstPersonCameraController& getCameraController();
-
-    void update(float deltaSeconds);
-
-private:
-    struct MouseState
-    {
-        vec2 position{0.0f};
-        bool pressedLeft{false};
-    } mouseState;
-
-private:
-    Window& mWindow;
-    FirstPersonCameraController mCameraController;
 };
 
 class Application
@@ -57,13 +40,11 @@ public:
 private:
     bool mIsInitialized;
 
-    // std::unique_ptr<Window> mMainWindow;
     Window mMainWindow;
 
-    FpsCameraWindowObserver mFpsCamWindowObserver;
-    Camera mCamera;
-
     MainRenderer mRenderer;
+
+    GuiWindowObserver mGuiWindowObserver;
 };
 
 } // namespace Suoh

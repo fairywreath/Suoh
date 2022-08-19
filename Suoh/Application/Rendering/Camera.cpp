@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include <glm/gtx/euler_angles.hpp>
+
 namespace Suoh
 {
 
@@ -107,6 +109,75 @@ void FirstPersonCameraController::setUpVector(const vec3& up)
     const mat4 view = getViewMatrix();
     const vec3 dir = -glm::vec3(view[0][2], view[1][2], view[2][2]);
     mCameraOrientation = glm::lookAt(mCameraPosition, mCameraPosition + dir, up);
+}
+
+/*
+ * Free moving camera
+ */
+FreeMovingCameraController::FreeMovingCameraController(const vec3& pos, const vec3& angles)
+    : mPositionCurrent(pos),
+      mPositionDesired(pos),
+      mAnglesCurrent(angles),
+      mAnglesDesired(angles)
+{
+}
+
+mat4 FreeMovingCameraController::getViewMatrix() const
+{
+    return mCurrentTransform;
+}
+
+vec3 FreeMovingCameraController::getPosition() const
+{
+    return mPositionCurrent;
+}
+
+void FreeMovingCameraController::update(float deltaSeconds)
+{
+    mPositionCurrent += DampingLinear * deltaSeconds * (mPositionDesired - mPositionCurrent);
+
+    // clip angles if "spin" is too great
+    mAnglesCurrent = clipAngles(mAnglesCurrent);
+    mAnglesDesired = clipAngles(mAnglesDesired);
+
+    mAnglesCurrent -= angleDelta(mAnglesCurrent, mAnglesDesired) * DampingEulerAngles * deltaSeconds;
+
+    // normalize/clip angles again if "spin" is too great
+    mAnglesCurrent = clipAngles(mAnglesCurrent);
+
+    const vec3 a = glm::radians(mAnglesCurrent);
+
+    mCurrentTransform = glm::translate(glm::yawPitchRoll(a.y, a.x, a.z), -mPositionCurrent);
+}
+
+void FreeMovingCameraController::setPosition(const vec3& pos)
+{
+    mPositionCurrent = pos;
+}
+
+void FreeMovingCameraController::setAngles(float pitch, float pan, float roll)
+{
+    mAnglesCurrent = {pitch, pan, roll};
+}
+
+void FreeMovingCameraController::setAngles(const vec3& angles)
+{
+    mAnglesCurrent = angles;
+}
+
+void FreeMovingCameraController::setDesiredPosition(const vec3& pos)
+{
+    mPositionDesired = pos;
+}
+
+void FreeMovingCameraController::setDesiredAngles(float pitch, float pan, float roll)
+{
+    mAnglesDesired = {pitch, pan, roll};
+}
+
+void FreeMovingCameraController::setDesiredAngles(const vec3& angles)
+{
+    mAnglesDesired = angles;
 }
 
 } // namespace Suoh

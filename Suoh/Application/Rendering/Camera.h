@@ -28,7 +28,10 @@ private:
     const CameraController* mController;
 };
 
-class FirstPersonCameraController : public CameraController
+/*
+ * Quaternion based first-person/look-at camera
+ */
+class FirstPersonCameraController final : public CameraController
 {
 public:
     FirstPersonCameraController() = default;
@@ -75,6 +78,66 @@ private:
     quat mCameraOrientation{quat(vec3(0))};
     vec3 mMoveSpeed{0.0f, 0.0f, 0.0f};
     vec3 mUp{0.0f, 1.0f, 0.0f};
+};
+
+/*
+ * Euler angles based free-moving/move-to camera
+ */
+class FreeMovingCameraController final : public CameraController
+{
+public:
+    FreeMovingCameraController() = default;
+    FreeMovingCameraController(const vec3& pos, const vec3& angles);
+
+    mat4 getViewMatrix() const override final;
+    vec3 getPosition() const override final;
+
+    void update(float deltaSeconds);
+
+    void setPosition(const vec3& pos);
+    void setAngles(float pitch, float pan, float roll);
+    void setAngles(const vec3& angles);
+
+    void setDesiredPosition(const vec3& pos);
+    void setDesiredAngles(float pitch, float pan, float roll);
+    void setDesiredAngles(const vec3& angles);
+
+public:
+    float DampingLinear{10.0f};
+    vec3 DampingEulerAngles{5.0f, 5.0f, 5.0f};
+
+private:
+    vec3 mPositionCurrent{vec3(0.0f)};
+    vec3 mPositionDesired{vec3(0.0f)};
+
+    // pitch, pan, roll
+    vec3 mAnglesCurrent{vec3(0.0f)};
+    vec3 mAnglesDesired{vec3(0.0f)};
+
+    mat4 mCurrentTransform{mat4(1.0f)};
+
+    static inline float clipAngle(float d)
+    {
+        if (d < -180.0f)
+            return d + 360.0f;
+        if (d > +180.0f)
+            return d - 360.f;
+        return d;
+    }
+
+    static inline vec3 clipAngles(const vec3& angles)
+    {
+        return vec3(
+            std::fmod(angles.x, 360.0f),
+            std::fmod(angles.y, 360.0f),
+            std::fmod(angles.z, 360.0f));
+    }
+
+    static inline vec3 angleDelta(const vec3& anglesCurrent, const vec3& anglesDesired)
+    {
+        const vec3 d = clipAngles(anglesCurrent) - clipAngles(anglesDesired);
+        return vec3(clipAngle(d.x), clipAngle(d.y), clipAngle(d.z));
+    }
 };
 
 } // namespace Suoh

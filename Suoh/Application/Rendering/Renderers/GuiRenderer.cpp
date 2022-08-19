@@ -86,6 +86,9 @@ void GuiRenderer::init()
 
 void GuiRenderer::recordCommands(VkCommandBuffer commandBuffer)
 {
+    if (!mDrawData)
+        return;
+
     beginRenderPass(commandBuffer);
 
     ImVec2 clipOff = mDrawData->DisplayPos;

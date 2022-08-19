@@ -42,9 +42,6 @@ private:
     size_t mBufferSize;
     std::vector<Buffer> mStorageBuffers;
 
-    // VkSampler mFontSampler;
-    // Image mFontImage{};
-
     Texture mFontTexture{};
 };
 
