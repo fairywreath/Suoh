@@ -20,6 +20,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include "VKUtils.h"
+
 namespace fs = std::filesystem;
 
 namespace Suoh
@@ -28,7 +30,7 @@ namespace Suoh
 namespace
 {
 
-static bool checkValidationLayerSupport()
+bool checkValidationLayerSupport()
 {
     u32 layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -113,9 +115,9 @@ static std::vector<const char*> getRequiredExtensions()
 /*
  * debug callback EXT utils
  */
-static VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                             const VkAllocationCallbacks* pAllocator,
-                                             VkDebugUtilsMessengerEXT* pDebugMessenger)
+VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator,
+                                      VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr)
@@ -128,8 +130,8 @@ static VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugU
     }
 }
 
-static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                          const VkAllocationCallbacks* pAllocator)
+void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                   const VkAllocationCallbacks* pAllocator)
 {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr)
@@ -138,10 +140,10 @@ static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
     }
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                    void* pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                             VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                             void* pUserData)
 {
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
     {
@@ -152,7 +154,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
-static VkDebugUtilsMessengerEXT createVkDebugUtilsMessenger(VkInstance instance)
+VkDebugUtilsMessengerEXT createVkDebugUtilsMessenger(VkInstance instance)
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -180,7 +182,7 @@ VkSurfaceKHR createVkSurfaceKHRFromGLFW(VkInstance instance, GLFWwindow* window)
     return surface;
 }
 
-static VkResult setDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+VkResult setDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
 {
     auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
     if (func != nullptr)
@@ -218,6 +220,18 @@ u32 bytesPerTexFormat(VkFormat fmt)
         break;
     }
     return 0;
+}
+
+void float24to32(int w, int h, const float* img24, float* img32)
+{
+    const int numPixels = w * h;
+    for (int i = 0; i != numPixels; i++)
+    {
+        *img32++ = *img24++;
+        *img32++ = *img24++;
+        *img32++ = *img24++;
+        *img32++ = 1.0f;
+    }
 }
 
 } // anonymous namespace
@@ -578,24 +592,6 @@ void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, const si
 bool VKRenderDevice::createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                  VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags)
 {
-    // const VkImageCreateInfo imageInfo = {
-    //     .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-    //     .pNext = nullptr,
-    //     .flags = flags,
-    //     .imageType = VK_IMAGE_TYPE_2D,
-    //     .format = format,
-    //     .extent = VkExtent3D{.width = width, .height = height, .depth = 1},
-    //     .mipLevels = 1,
-    //     .arrayLayers = 1,
-    //     .samples = VK_SAMPLE_COUNT_1_BIT,
-    //     .tiling = tiling,
-    //     .usage = usage,
-    //     .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    //     .queueFamilyIndexCount = 0,
-    //     .pQueueFamilyIndices = nullptr,
-    //     .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-    // };
-
     const VkImageCreateInfo imageInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -628,21 +624,24 @@ bool VKRenderDevice::createImage(u32 width, u32 height, VkFormat format, VkImage
     return true;
 }
 
-bool VKRenderDevice::createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image)
+bool VKRenderDevice::createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image,
+                                     VkImageViewType viewType, u32 layerCount, u32 mipLevels)
 {
     const VkImageViewCreateInfo viewInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .image = image.image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = viewType,
         .format = format,
         .subresourceRange = {
             .aspectMask = aspectFlags,
             .baseMipLevel = 0,
-            .levelCount = 1,
+            .levelCount = mipLevels,
             .baseArrayLayer = 0,
-            .layerCount = 1}};
+            .layerCount = layerCount,
+        },
+    };
 
     VK_CHECK(vkCreateImageView(mDevice.getLogical(), &viewInfo, nullptr, &image.imageView));
 
@@ -985,6 +984,37 @@ bool VKRenderDevice::updateTextureImage(Image& image, u32 width, u32 height, VkF
     destroyBuffer(stagingBuffer);
 
     return true;
+}
+
+bool VKRenderDevice::createCubeTextureImage(Image& image, const std::string& filePath, u32* width, u32* height)
+{
+    int w, h, comp;
+    const float* img = stbi_loadf(filePath.c_str(), &w, &h, &comp, 3);
+    std::vector<float> img32(w * h * 4);
+
+    float24to32(w, h, img, img32.data());
+
+    if (!img)
+    {
+        LOG_ERROR("Failed to load image: ", filePath, "!");
+        return false;
+    }
+
+    stbi_image_free((void*)img);
+
+    Bitmap in(w, h, 4, BitmapFormatFloat, img32.data());
+    Bitmap out = convertEquirectangularMapToVerticalCross(in);
+
+    Bitmap cube = convertVerticalCrossToCubeMapFaces(out);
+
+    if (width && height)
+    {
+        *width = w;
+        *height = h;
+    }
+
+    return createTextureImageFromData(cube.data_.data(), cube.w_, cube.h_, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                      image, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
 }
 
 bool VKRenderDevice::createDescriptorPool(u32 uniformBufferCount, u32 storageBufferCount, u32 samplerCount, VkDescriptorPool& descriptorPool)

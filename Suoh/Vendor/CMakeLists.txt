@@ -41,3 +41,6 @@ target_sources(imgui PRIVATE
 )
 # package needs to be Vulkan::Vulkan to build imgui vulkan lib
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
+
+# optick
+add_subdirectory(optick)

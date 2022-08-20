@@ -121,12 +121,14 @@ public:
      */
     bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags = 0);
-    bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image);
+    bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D, u32 layerCount = 1, u32 mipLevels = 1);
     bool createTextureSampler(Texture& texture);
     bool createTextureImage(const std::string& filePath, Texture& texture);
 
     bool createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount = 1, VkImageCreateFlags createFlags = 0);
     bool updateTextureImage(Image& image, u32 width, u32 height, VkFormat format, const void* imageData, u32 layerCount = 1, VkImageLayout sourceImageLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+
+    bool createCubeTextureImage(Image& image, const std::string& filePath, u32* width = nullptr, u32* height = nullptr);
 
     void destroyImage(Image& image);
     void destroyTexture(Texture& texture);

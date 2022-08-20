@@ -5,6 +5,7 @@
 
 #include "Renderers/CanvasRenderer.h"
 #include "Renderers/ClearRenderer.h"
+#include "Renderers/CubeRenderer.h"
 #include "Renderers/FinishRenderer.h"
 #include "Renderers/GuiRenderer.h"
 #include "Renderers/ModelRenderer.h"
@@ -80,6 +81,7 @@ private:
     std::unique_ptr<FinishRenderer> mFinishRenderer{nullptr};
     std::unique_ptr<CanvasRenderer> mCanvasRenderer{nullptr};
     std::unique_ptr<GuiRenderer> mGuiRenderer{nullptr};
+    std::unique_ptr<CubeRenderer> mCubeRenderer{nullptr};
 
     std::vector<RendererBase*> mRenderers;
 

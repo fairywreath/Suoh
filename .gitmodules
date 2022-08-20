@@ -25,3 +25,6 @@
 [submodule "Suoh/Vendor/imgui"]
 	path = Suoh/Vendor/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "Suoh/Vendor/optick"]
+	path = Suoh/Vendor/optick
+	url = git@github.com:bombomby/optick.git

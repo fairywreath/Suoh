@@ -5,6 +5,8 @@
 
 #include <RenderLib/Vulkan/VKRenderDevice.h>
 
+#include "Profiler.h"
+
 namespace Suoh
 {
 
@@ -84,9 +86,10 @@ void Application::run()
 
 void Application::init()
 {
-    mMainWindow.addObserver(mGuiWindowObserver);
+    // PROF_ENABLE;
+    // PROF_MAIN_THREAD;
 
-    // mRenderer.init(&mMainWindow);
+    mMainWindow.addObserver(mGuiWindowObserver);
 
     mIsInitialized = true;
 }
@@ -94,6 +97,8 @@ void Application::init()
 void Application::destroy()
 {
     mMainWindow.destroy();
+
+    // PROF_DUMP("profiling.dump");
 }
 
 } // namespace Suoh

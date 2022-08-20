@@ -4,12 +4,14 @@ file(GLOB_RECURSE CLIENT_FILES "*.cpp" "*.h")
 
 add_executable(${PROJECT_NAME} ${CLIENT_FILES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	core
 	render-lib
 	imgui
+	# XXX: make this adjustable from cli
+	# OptickCore
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "suohpch.h")

@@ -6,6 +6,8 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
+#include "Profiler.h"
+
 namespace Suoh
 {
 
@@ -102,8 +104,12 @@ void MainRenderer::init()
     ImGui::CreateContext();
     mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), &mWindow);
 
+    mCubeRenderer = std::make_unique<CubeRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
+    mCubeRenderer->loadCubeMap("Resources/piazza_bologni_1k.hdr");
+
     mRenderers = {
         mClearRenderer.get(),
+        mCubeRenderer.get(),
         mModelRenderer.get(),
         mCanvasRenderer.get(),
         mGuiRenderer.get(),
@@ -161,6 +167,13 @@ void MainRenderer::update(float deltaSeconds)
     };
 
     mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
+
+    const mat4 cubeRot = glm::rotate(
+        glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
+        0.0f,
+        vec3(0.0f, 1.0f, 0.0f));
+    mCubeRenderer->updateUniformBuffer(p * view * cubeRot);
+
     // mCanvasRenderer->updateUniformBuffer(ubo.mvp, 0);
 }
 
