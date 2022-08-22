@@ -44,3 +44,6 @@ target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # optick
 add_subdirectory(optick)
+
+# meshoptimizer
+add_subdirectory(meshoptimizer)

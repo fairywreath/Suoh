@@ -28,3 +28,6 @@
 [submodule "Suoh/Vendor/optick"]
 	path = Suoh/Vendor/optick
 	url = git@github.com:bombomby/optick.git
+[submodule "Suoh/Vendor/meshoptimizer"]
+	path = Suoh/Vendor/meshoptimizer
+	url = git@github.com:zeux/meshoptimizer.git
