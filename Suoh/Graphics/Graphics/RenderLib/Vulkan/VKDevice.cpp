@@ -222,6 +222,7 @@ void VKDevice::initLogicalDevice()
 
     VkPhysicalDeviceFeatures deviceFeatures = {
         .geometryShader = VK_TRUE,
+        .multiDrawIndirect = VK_TRUE,
         .pipelineStatisticsQuery = VK_TRUE,
     };
 

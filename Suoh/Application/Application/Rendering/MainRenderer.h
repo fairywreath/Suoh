@@ -9,6 +9,7 @@
 #include "Renderers/FinishRenderer.h"
 #include "Renderers/GuiRenderer.h"
 #include "Renderers/ModelRenderer.h"
+#include "Renderers/MultiMeshRenderer.h"
 
 #include "Camera.h"
 #include "FramesPerSecondCounter.h"
@@ -82,6 +83,8 @@ private:
     std::unique_ptr<CanvasRenderer> mCanvasRenderer{nullptr};
     std::unique_ptr<GuiRenderer> mGuiRenderer{nullptr};
     std::unique_ptr<CubeRenderer> mCubeRenderer{nullptr};
+
+    std::unique_ptr<MultiMeshRenderer> mMultiMeshRenderer{nullptr};
 
     std::vector<RendererBase*> mRenderers;
 

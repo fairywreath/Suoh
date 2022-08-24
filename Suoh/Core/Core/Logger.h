@@ -61,7 +61,7 @@ public:
             return;
         }
 
-        oss << "]: ";
+        oss << "] ";
         (oss << ... << std::forward<Args>(args));
 
         auto&& lock __attribute__((unused)) = std::lock_guard<std::mutex>(mOutputMutex);

@@ -5,6 +5,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <assimp/Importer.hpp>
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -487,9 +488,15 @@ static int roundUpClosest(int numToRound, int multiple)
     return roundUp;
 }
 
+size_t VKRenderDevice::getMinStorageBufferOffset() const
+{
+    return mDevice.getPhysDeviceProperties().limits.minStorageBufferOffsetAlignment;
+}
+
 bool VKRenderDevice::createTexturedVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset)
 {
-    const aiScene* scene = aiImportFile(filePath.c_str(), aiProcess_Triangulate);
+    Assimp::Importer import;
+    const aiScene* scene = import.ReadFile(filePath.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
     if (!scene || !scene->HasMeshes())
     {
@@ -497,6 +504,7 @@ bool VKRenderDevice::createTexturedVertexBuffer(const std::string& filePath, Buf
         return false;
     }
 
+    // only create buffer for 1 mesh...
     const aiMesh* mesh = scene->mMeshes[0];
     struct VertexData
     {
@@ -523,8 +531,6 @@ bool VKRenderDevice::createTexturedVertexBuffer(const std::string& filePath, Buf
             indices.push_back(mesh->mFaces[i].mIndices[j]);
         }
     }
-
-    aiReleaseImport(scene);
 
     vertexBufferSize = sizeof(VertexData) * vertices.size();
     indexBufferSize = sizeof(unsigned int) * indices.size();
@@ -586,6 +592,14 @@ void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, const si
     void* mappedData = nullptr;
     vmaMapMemory(mAllocator, buffer.allocation, &mappedData);
     memcpy(mappedData, data, dataSize);
+    vmaUnmapMemory(mAllocator, buffer.allocation);
+}
+
+void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, size_t offset, size_t dataSize)
+{
+    void* mappedData = nullptr;
+    vmaMapMemory(mAllocator, buffer.allocation, &mappedData);
+    memcpy((u8*)mappedData + offset, data, dataSize);
     vmaUnmapMemory(mAllocator, buffer.allocation);
 }
 
@@ -1674,6 +1688,8 @@ static VkShaderStageFlagBits glslangShaderStageToVulkan(glslang_stage_t sh)
         return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
     case GLSLANG_STAGE_COMPUTE:
         return VK_SHADER_STAGE_COMPUTE_BIT;
+    default:
+        break;
     }
 
     return VK_SHADER_STAGE_VERTEX_BIT;

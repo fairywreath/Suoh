@@ -6,7 +6,7 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-#include "Application/Profiler.h"
+#include "../Profiler.h"
 
 namespace Suoh
 {
@@ -15,7 +15,8 @@ namespace Suoh
  * Window input callbacks to control camera
  */
 FpsCameraWindowObserver::FpsCameraWindowObserver(Window& window)
-    : mWindow(window)
+    : mWindow(window),
+      mCameraController(glm::vec3(0.0f, -5.0f, 15.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f))
 {
     mWindow.addObserver(*this);
 }
@@ -94,30 +95,44 @@ void MainRenderer::init()
 {
     mRenderDevice = std::make_unique<VKRenderDevice>(&mWindow);
 
-    mModelRenderer = std::make_unique<ModelRenderer>(mRenderDevice.get(), &mWindow);
-    mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "Resources/rubber_duck/textures/Duck_baseColor.png", sizeof(ModelUniformBuffer));
+    // mModelRenderer = std::make_unique<ModelRenderer>(mRenderDevice.get(), &mWindow);
+    // mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "Resources/rubber_duck/textures/Duck_baseColor.png", sizeof(ModelUniformBuffer));
+    // mModelRenderer->loadModel("../../../Resources/backpack/backpack.obj", "../../../Resources/backpack/diffuse.jpg", sizeof(ModelUniformBuffer));
 
-    mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
-    mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
-    mCanvasRenderer = std::make_unique<CanvasRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
+    mMultiMeshRenderer = std::make_unique<MultiMeshRenderer>(mRenderDevice.get(), &mWindow);
+    mMultiMeshRenderer->loadMeshes("../../../Resources/bistro/test.meshes",
+                                   "../../../Resources/bistro/test.meshes.drawdata", "",
+                                   "../../../Suoh/Shaders/MultiMesh.vert",
+                                   "../../../Suoh/Shaders/MultiMesh.frag");
+
+    // mMultiMeshRenderer->loadMeshes("../../../Resources/nimbasa/nimbasa.smesh",
+    //                                "../../../Resources/nimbasa/nimbasa_draw.smesh", "",
+    //                                "../../../Suoh/Shaders/MultiMesh.vert",
+    //                                "../../../Suoh/Shaders/MultiMesh.frag");
+
+    // mMultiMeshRenderer->loadMeshes("../../../Resources/neptune/neptune.smesh",
+    //                                "../../../Resources/neptune/neptune_drawdata.smesh", "",
+    //                                "../../../Suoh/Shaders/MultiMesh.vert",
+    //                                "../../../Suoh/Shaders/MultiMesh.frag");
+
+    mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, Image());
+    mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, Image());
 
     ImGui::CreateContext();
     mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), &mWindow);
 
-    mCubeRenderer = std::make_unique<CubeRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
-    mCubeRenderer->loadCubeMap("Resources/piazza_bologni_1k.hdr");
+    // mCubeRenderer = std::make_unique<CubeRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
+    // mCubeRenderer->loadCubeMap("Resources/piazza_bologni_1k.hdr");
 
     mRenderers = {
         mClearRenderer.get(),
-        mCubeRenderer.get(),
-        mModelRenderer.get(),
-        mCanvasRenderer.get(),
+        // mCubeRenderer.get(),
+        // mModelRenderer.get(),
+        // mCanvasRenderer.get(),
+        mMultiMeshRenderer.get(),
         mGuiRenderer.get(),
         mFinishRenderer.get(),
     };
-
-    // mCanvasRenderer->drawLine({-1.0f, -1.0f, 0.5f}, {1.0f, 1.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f});
-    // mCanvasRenderer->updateBuffer();
 }
 
 void MainRenderer::render(float deltaSeconds)
@@ -153,26 +168,30 @@ void MainRenderer::update(float deltaSeconds)
     glfwGetFramebufferSize((GLFWwindow*)mWindow.getNativeWindow(), &width, &height);
     const float ratio = width / (float)height;
 
-    const mat4 m1 = glm::rotate(
-        glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
-        (float)glfwGetTime(),
-        vec3(0.0f, 1.0f, 0.0f));
+    // const mat4 m1 = glm::rotate(
+    //     glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
+    //     (float)glfwGetTime(),
+    //     vec3(0.0f, 1.0f, 0.0f));
+    // const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
+
+    const mat4 m1 = glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0));
     const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
 
     const mat4 view = mCamera.getViewMatrix();
 
     const ModelUniformBuffer ubo = {
         .mvp = p * view * m1,
-        // .mvp = p * m1,
     };
 
-    mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
+    mMultiMeshRenderer->updateUniformBuffer(ubo.mvp);
 
-    const mat4 cubeRot = glm::rotate(
-        glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
-        0.0f,
-        vec3(0.0f, 1.0f, 0.0f));
-    mCubeRenderer->updateUniformBuffer(p * view * cubeRot);
+    // mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
+
+    // const mat4 cubeRot = glm::rotate(
+    //     glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
+    //     0.0f,
+    //     vec3(0.0f, 1.0f, 0.0f));
+    // mCubeRenderer->updateUniformBuffer(p * view * cubeRot);
 
     // mCanvasRenderer->updateUniformBuffer(ubo.mvp, 0);
 }
@@ -202,9 +221,9 @@ void MainRenderer::composeFrame()
 namespace
 {
 // ImGUI stuff
-const char* cameraType = "First Person";
-const char* comboBoxItems[] = {"First Person", "Free Moving"};
-const char* currentComboBoxItem = cameraType;
+const std::string comboBoxItems[] = {"First Person", "Free Moving"};
+std::string cameraType = comboBoxItems[0];
+std::string currentComboBoxItem = cameraType;
 
 } // namespace
 
@@ -226,13 +245,13 @@ void MainRenderer::renderGui()
 
     ImGui::Begin("Camera Control", nullptr);
     {
-        if (ImGui::BeginCombo("##combo", currentComboBoxItem)) // The second parameter is the label previewed before opening the combo.
+        if (ImGui::BeginCombo("##combo", currentComboBoxItem.c_str())) // The second parameter is the label previewed before opening the combo.
         {
             for (int n = 0; n < IM_ARRAYSIZE(comboBoxItems); n++)
             {
                 const bool isSelected = (currentComboBoxItem == comboBoxItems[n]);
 
-                if (ImGui::Selectable(comboBoxItems[n], isSelected))
+                if (ImGui::Selectable(comboBoxItems[n].c_str(), isSelected))
                     currentComboBoxItem = comboBoxItems[n];
 
                 if (isSelected)
@@ -241,7 +260,7 @@ void MainRenderer::renderGui()
             ImGui::EndCombo();
         }
 
-        if (!strcmp(cameraType, "Free Moving"))
+        if (cameraType == "Free Moving")
         {
             if (ImGui::SliderFloat3("Position", glm::value_ptr(mFreeMovingCameraPos), -10.0f, +10.0f))
                 mFreeMovingCameraController.setDesiredPosition(mFreeMovingCameraPos);
@@ -249,7 +268,7 @@ void MainRenderer::renderGui()
                 mFreeMovingCameraController.setDesiredAngles(mFreeMovingCameraAngles);
         }
 
-        if (currentComboBoxItem && strcmp(currentComboBoxItem, cameraType))
+        if (currentComboBoxItem != cameraType)
         {
             LOG_INFO("Selected new camera type: ", currentComboBoxItem);
             cameraType = currentComboBoxItem;
@@ -265,13 +284,13 @@ void MainRenderer::renderGui()
 void MainRenderer::reinitCamera()
 {
 
-    if (!strcmp(cameraType, "First Person"))
+    if (cameraType == "First Person")
     {
         mCamera = Camera(mFpsCamWindowObserver.getCameraController());
     }
     else
     {
-        if (!strcmp(cameraType, "Free Moving"))
+        if (cameraType == "Free Moving")
         {
             mFreeMovingCameraController.setDesiredPosition(mFreeMovingCameraPos);
             mFreeMovingCameraController.setDesiredAngles(mFreeMovingCameraAngles.x, mFreeMovingCameraAngles.y, mFreeMovingCameraAngles.z);

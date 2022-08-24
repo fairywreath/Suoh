@@ -115,6 +115,7 @@ public:
     void unmapMemory(VmaAllocation allocation);
 
     void uploadBufferData(Buffer& buffer, const void* data, const size_t dataSize);
+    void uploadBufferData(Buffer& buffer, const void* data, size_t offset, size_t dataSize);
 
     /*
      * Images and textures
@@ -189,6 +190,8 @@ public:
      * Misc./debug
      */
     bool setVkObjectName(void* object, VkObjectType objectType, const std::string& name);
+
+    size_t getMinStorageBufferOffset() const;
 
 private:
     void init();

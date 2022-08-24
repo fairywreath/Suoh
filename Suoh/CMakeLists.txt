@@ -7,6 +7,8 @@ add_subdirectory(Application)
 add_subdirectory(Graphics)
 add_subdirectory(Vendor)
 
+add_subdirectory(MeshConvert)
+
 # XXX: shader compiplation does not seem to wrok...
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
   set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
@@ -41,4 +43,3 @@ add_custom_target(
 )
 
 file(COPY "${PROJECT_SOURCE_DIR}/Shaders/" DESTINATION "${PROJECT_OUTPUT_DIRECTORY}/Application/")
-

@@ -7,6 +7,11 @@ file(GLOB_RECURSE SOURCE_FILES "*.cpp" "*.h" "*.hpp")
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
+# dynamically link assimp
+# find_package(assimp)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../Vendor/lib/assimp-vc143-mt.lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../Vendor/assimp/include)
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     core
@@ -17,8 +22,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     glslang
     SPIRV
     stb_image
-    assimp
     glfw
+    # assimp
 )
 
 
