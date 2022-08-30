@@ -23,6 +23,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     SPIRV
     stb_image
     glfw
+    gli
     # assimp
 )
 

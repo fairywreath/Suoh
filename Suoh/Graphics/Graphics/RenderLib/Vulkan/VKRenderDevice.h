@@ -67,6 +67,49 @@ struct RenderPassCreateInfo
     u8 flags = 0;
 };
 
+inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t descriptorCount = 1)
+{
+    return VkDescriptorSetLayoutBinding{
+        .binding = binding,
+        .descriptorType = descriptorType,
+        .descriptorCount = descriptorCount,
+        .stageFlags = stageFlags,
+        .pImmutableSamplers = nullptr,
+    };
+}
+
+inline VkWriteDescriptorSet bufferWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorBufferInfo* bi, uint32_t bindIdx, VkDescriptorType dType)
+{
+    return VkWriteDescriptorSet{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        nullptr,
+        ds,
+        bindIdx,
+        0,
+        1,
+        dType,
+        nullptr,
+        bi,
+        nullptr,
+    };
+}
+
+inline VkWriteDescriptorSet imageWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorImageInfo* ii, uint32_t bindIdx)
+{
+    return VkWriteDescriptorSet{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        nullptr,
+        ds,
+        bindIdx,
+        0,
+        1,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        ii,
+        nullptr,
+        nullptr,
+    };
+}
+
 /*
  * Temp. (monolithic) implementation of a vulkan render devoce
  */
@@ -108,6 +151,11 @@ public:
     // loads 3d model, loads to vertex + indices SSBO
     bool createTexturedVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset);
 
+    bool createPBRVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset);
+
+    // shared buffer for compute
+    bool createSharedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage, Buffer& buffer);
+
     void destroyBuffer(Buffer& buffer);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -117,13 +165,15 @@ public:
     void uploadBufferData(Buffer& buffer, const void* data, const size_t dataSize);
     void uploadBufferData(Buffer& buffer, const void* data, size_t offset, size_t dataSize);
 
+    void downloadBuferData(Buffer& buffer, void* outData, size_t offset, size_t dataSize);
+
     /*
      * Images and textures
      */
     bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags = 0);
     bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D, u32 layerCount = 1, u32 mipLevels = 1);
-    bool createTextureSampler(Texture& texture);
+    bool createTextureSampler(Texture& texture, VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR, VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
     bool createTextureImage(const std::string& filePath, Texture& texture);
 
     bool createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount = 1, VkImageCreateFlags createFlags = 0);
@@ -151,7 +201,10 @@ public:
      * Descriptor sets
      */
     bool createDescriptorPool(u32 uniformBufferCount, u32 storageBufferCount, u32 samplerCount, VkDescriptorPool& descriptorPool);
+    bool createDescriptorPool(VkDescriptorPoolCreateInfo createInfo, VkDescriptorPool& descriptorPool);
+
     bool createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& layout);
+
     bool allocateDescriptorSets(VkDescriptorPool descriptorPool, const std::vector<VkDescriptorSetLayout>& layouts, std::vector<VkDescriptorSet>& descriptorSets);
     void updateDescriptorSets(u32 descriptorWriteCount, const std::vector<VkWriteDescriptorSet>& descriptorWrites);
 
@@ -187,11 +240,38 @@ public:
     void destroyFramebuffer(VkFramebuffer frameBuffer);
 
     /*
+     * Compute pipeline
+     */
+    bool createComputePipeline(VkPipeline& pipeline, VkPipelineLayout pipelineLayout, VkShaderModule computeShader);
+    bool executeComputeShader(VkPipeline computePipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet,
+                              u32 xsize, u32 ysize, u32 zsize);
+
+    /*
      * Misc./debug
      */
     bool setVkObjectName(void* object, VkObjectType objectType, const std::string& name);
 
     size_t getMinStorageBufferOffset() const;
+
+    inline VkDevice getVkDevice() const
+    {
+        return mDevice.getLogical();
+    }
+
+    /*
+     * Misc. synchronization calls, used mainly for compute.
+     * XXX: need to replace this with a dispatch/job system.
+     */
+    bool createFence(VkFence& fence, VkFenceCreateFlags flags = 0);
+    void destroyFence(VkFence fence);
+
+    void waitFence(VkFence fence);
+
+    bool submitCompute(const VkCommandBuffer& commandBuffer, VkFence fence);
+    const VkCommandBuffer& getComputeCommendBuffer() const
+    {
+        return mComputeCommandBuffer;
+    }
 
 private:
     void init();
@@ -214,13 +294,15 @@ private:
 
     VmaAllocator mAllocator;
 
-    VkCommandPool mCommandPool;
+    VkSemaphore mRenderSemaphore;
 
+    VkCommandPool mCommandPool;
     // temp command buffers, 1 per swapchain image
     std::vector<VkCommandBuffer> mCommandBuffers;
 
-    // synchronization objects
-    VkSemaphore mRenderSemaphore;
+    // 1 command buffer for compute
+    VkCommandPool mComputeCommandPool;
+    VkCommandBuffer mComputeCommandBuffer;
 };
 
 } // namespace Suoh

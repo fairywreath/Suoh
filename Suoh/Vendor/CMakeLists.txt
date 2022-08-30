@@ -4,6 +4,8 @@ add_subdirectory(vma)
 add_subdirectory(Vulkan-Headers)
 add_subdirectory(glm)
 
+add_subdirectory(gli)
+
 # stb
 add_library(stb_image INTERFACE)
 target_include_directories(stb_image INTERFACE stb_image)

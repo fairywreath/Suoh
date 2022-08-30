@@ -3,6 +3,7 @@
 #include <Core/Logger.h>
 
 #include <assimp/Importer.hpp>
+#include <meshoptimizer.h>
 
 namespace Suoh
 {
@@ -15,6 +16,58 @@ static constexpr auto g_numElementsToStore = 3 + 3 + 2;
 
 float g_meshScale = 0.01f;
 bool g_calculateLODs = false;
+
+void processLods(std::vector<u32>& indices, std::vector<float>& vertices, std::vector<std::vector<u32>>& outLods)
+{
+    size_t verticesCountIn = vertices.size() / 2;
+    size_t targetIndicesCount = indices.size();
+
+    u8 LOD = 1;
+
+    outLods.push_back(indices);
+
+    while (targetIndicesCount > 1024 && LOD < 8)
+    {
+        targetIndicesCount = indices.size() / 2;
+
+        bool sloppy = false;
+
+        size_t numOptIndices = meshopt_simplify(
+            indices.data(),
+            indices.data(), (u32)indices.size(),
+            vertices.data(), verticesCountIn,
+            sizeof(float) * 3,
+            targetIndicesCount, 0.02f);
+
+        // cannot simplify further
+        if (static_cast<size_t>(numOptIndices * 1.1f) > indices.size())
+        {
+            if (LOD > 1)
+            {
+                // try harder
+                numOptIndices = meshopt_simplifySloppy(
+                    indices.data(),
+                    indices.data(), indices.size(),
+                    vertices.data(), verticesCountIn,
+                    sizeof(float) * 3,
+                    targetIndicesCount, 0.02f);
+                sloppy = true;
+                if (numOptIndices == indices.size())
+                    break;
+            }
+            else
+                break;
+        }
+
+        indices.resize(numOptIndices);
+
+        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), verticesCountIn);
+
+        LOD++;
+
+        outLods.push_back(indices);
+    }
+}
 
 Mesh convertAIMesh(const aiMesh* aimesh, MeshData& meshData, u32& indexOffset, u32& vertexOffset)
 {
@@ -40,12 +93,12 @@ Mesh convertAIMesh(const aiMesh* aimesh, MeshData& meshData, u32& indexOffset, u
         // texcoords
         const aiVector3D t = hasTexCoords ? aimesh->mTextureCoords[0][i] : aiVector3D();
 
-        // if (g_calculateLODs)
-        // {
-        //     srcVertices.push_back(v.x);
-        //     srcVertices.push_back(v.y);
-        //     srcVertices.push_back(v.z);
-        // }
+        if (g_calculateLODs)
+        {
+            srcVertices.push_back(v.x);
+            srcVertices.push_back(v.y);
+            srcVertices.push_back(v.z);
+        }
 
         vertices.push_back(v.x * g_meshScale);
         vertices.push_back(v.y * g_meshScale);
@@ -76,10 +129,10 @@ Mesh convertAIMesh(const aiMesh* aimesh, MeshData& meshData, u32& indexOffset, u
             srcIndices.push_back(aimesh->mFaces[i].mIndices[j]);
     }
 
-    // if (!g_calculateLODs)
-    outLods.push_back(srcIndices);
-    // else
-    //     processLods(srcIndices, srcVertices, outLods);
+    if (!g_calculateLODs)
+        outLods.push_back(srcIndices);
+    else
+        processLods(srcIndices, srcVertices, outLods);
 
     // LOG_INFO("Number of vertices: ", aimesh->mNumVertices);
     // LOG_INFO("Calculated LOD count: ", outLods.size());

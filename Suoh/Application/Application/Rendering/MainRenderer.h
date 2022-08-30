@@ -2,6 +2,7 @@
 
 #include <Core/SuohBase.h>
 #include <Graphics/RenderLib/Vulkan/VKRenderDevice.h>
+#include <Graphics/Scene/Scene.h>
 
 #include "Renderers/CanvasRenderer.h"
 #include "Renderers/ClearRenderer.h"
@@ -10,6 +11,9 @@
 #include "Renderers/GuiRenderer.h"
 #include "Renderers/ModelRenderer.h"
 #include "Renderers/MultiMeshRenderer.h"
+#include "Renderers/QuadRenderer.h"
+
+#include "Renderers/PBRModelRenderer.h"
 
 #include "Camera.h"
 #include "FramesPerSecondCounter.h"
@@ -78,6 +82,8 @@ private:
     std::unique_ptr<VKRenderDevice> mRenderDevice{nullptr};
 
     std::unique_ptr<ModelRenderer> mModelRenderer{nullptr};
+    std::unique_ptr<PBRModelRenderer> mPBRModelRenderer{nullptr};
+
     std::unique_ptr<ClearRenderer> mClearRenderer{nullptr};
     std::unique_ptr<FinishRenderer> mFinishRenderer{nullptr};
     std::unique_ptr<CanvasRenderer> mCanvasRenderer{nullptr};

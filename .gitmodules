@@ -31,3 +31,6 @@
 [submodule "Suoh/Vendor/meshoptimizer"]
 	path = Suoh/Vendor/meshoptimizer
 	url = git@github.com:zeux/meshoptimizer.git
+[submodule "Suoh/Vendor/gli"]
+	path = Suoh/Vendor/gli
+	url = git@github.com:g-truc/gli.git

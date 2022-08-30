@@ -262,7 +262,7 @@ void VKRenderDevice::init()
 
 void VKRenderDevice::initCommands()
 {
-    VkCommandPoolCreateInfo commandPoolInfo = {
+    const VkCommandPoolCreateInfo commandPoolInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -276,12 +276,29 @@ void VKRenderDevice::initCommands()
     const VkCommandBufferAllocateInfo allocInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext = nullptr,
-        .commandPool = mCommandPool, // XXX: use different command pool?
+        .commandPool = mCommandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = (u32)mSwapchain.getImageCount(),
     };
 
     VK_CHECK(vkAllocateCommandBuffers(mDevice.getLogical(), &allocInfo, mCommandBuffers.data()));
+
+    const VkCommandPoolCreateInfo computeCommandPoolInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = mDevice.getComputeFamily(),
+    };
+    VK_CHECK(vkCreateCommandPool(mDevice.getLogical(), &computeCommandPoolInfo, nullptr, &mComputeCommandPool));
+
+    const VkCommandBufferAllocateInfo computeAllocInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = nullptr,
+        .commandPool = mComputeCommandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VK_CHECK(vkAllocateCommandBuffers(mDevice.getLogical(), &computeAllocInfo, &mComputeCommandBuffer));
 }
 
 void VKRenderDevice::initAllocator()
@@ -306,13 +323,16 @@ void VKRenderDevice::initSynchronizationObjects()
 
 void VKRenderDevice::destroy()
 {
-    auto device = mDevice.getLogical();
+    const auto device = mDevice.getLogical();
 
-    vkFreeCommandBuffers(mDevice.getLogical(), mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
+    vkFreeCommandBuffers(device, mComputeCommandPool, 1, &mComputeCommandBuffer);
+    vkDestroyCommandPool(device, mComputeCommandPool, nullptr);
+
+    vkFreeCommandBuffers(device, mCommandPool, mCommandBuffers.size(), mCommandBuffers.data());
+    vkDestroyCommandPool(device, mCommandPool, nullptr);
 
     vkDestroySemaphore(device, mRenderSemaphore, nullptr);
 
-    vkDestroyCommandPool(device, mCommandPool, nullptr);
     vmaDestroyAllocator(mAllocator);
 
     mSwapchain.destroy();
@@ -558,6 +578,101 @@ bool VKRenderDevice::createTexturedVertexBuffer(const std::string& filePath, Buf
     return true;
 }
 
+bool VKRenderDevice::createPBRVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset)
+{
+    Assimp::Importer import;
+    const aiScene* scene = import.ReadFile(filePath.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
+
+    if (!scene || !scene->HasMeshes())
+    {
+        LOG_ERROR("Failed to load model: ", filePath);
+        return false;
+    }
+
+    const aiMesh* mesh = scene->mMeshes[0];
+    struct VertexData
+    {
+        vec4 pos;
+        vec4 n;
+        vec4 tc;
+    };
+
+    std::vector<VertexData> vertices;
+    for (unsigned i = 0; i != mesh->mNumVertices; i++)
+    {
+        const aiVector3D v = mesh->mVertices[i];
+        const aiVector3D t = mesh->mTextureCoords[0][i];
+        const aiVector3D n = mesh->mNormals[i];
+        vertices.push_back({.pos = vec4(v.x, v.y, v.z, 1.0f), .n = vec4(n.x, n.y, n.z, 0.0f), .tc = vec4(t.x, 1.0f - t.y, 0.0f, 0.0f)});
+    }
+
+    std::vector<unsigned int> indices;
+    for (unsigned i = 0; i != mesh->mNumFaces; i++)
+    {
+        for (unsigned j = 0; j != 3; j++)
+            indices.push_back(mesh->mFaces[i].mIndices[j]);
+    }
+
+    vertexBufferSize = sizeof(VertexData) * vertices.size();
+    indexBufferSize = sizeof(unsigned int) * indices.size();
+
+    vertexBufferSize = sizeof(VertexData) * vertices.size();
+    indexBufferSize = sizeof(unsigned int) * indices.size();
+
+    VkDeviceSize minStorageBufferOffset = mDevice.getPhysDeviceProperties().limits.minStorageBufferOffsetAlignment;
+    indexBufferOffset = roundUpClosest(vertexBufferSize, minStorageBufferOffset);
+
+    VkDeviceSize bufferSize = indexBufferOffset + indexBufferSize;
+
+    Buffer stagingBuffer;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer);
+
+    void* data;
+    mapMemory(stagingBuffer.allocation, &data);
+    memcpy(data, vertices.data(), vertexBufferSize);
+    memcpy((u8*)data + indexBufferOffset, indices.data(), indexBufferSize);
+    unmapMemory(stagingBuffer.allocation);
+
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VMA_MEMORY_USAGE_GPU_ONLY, buffer);
+    copyBuffer(stagingBuffer.buffer, buffer.buffer, bufferSize);
+
+    destroyBuffer(stagingBuffer);
+
+    return true;
+}
+
+bool VKRenderDevice::createSharedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage, Buffer& buffer)
+{
+    auto familyCount = mDevice.getQueueFamilyIndicesCount();
+
+    if (familyCount == 1)
+    {
+        return createBuffer(size, usage, memUsage, buffer);
+    }
+
+    auto indices = mDevice.getQueueFamilyIndices();
+
+    const VkBufferCreateInfo bufferInfo = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .size = size,
+        .usage = usage,
+        .sharingMode = VK_SHARING_MODE_CONCURRENT,
+        .queueFamilyIndexCount = (u32)indices.size(),
+        .pQueueFamilyIndices = indices.data(),
+    };
+
+    const VmaAllocationCreateInfo allocInfo = {
+        .usage = memUsage,
+    };
+
+    VK_CHECK(vmaCreateBuffer(mAllocator, &bufferInfo, &allocInfo, &buffer.buffer, &buffer.allocation, nullptr));
+
+    return true;
+}
+
 void VKRenderDevice::destroyBuffer(Buffer& buffer)
 {
     vmaDestroyBuffer(mAllocator, buffer.buffer, buffer.allocation);
@@ -600,6 +715,14 @@ void VKRenderDevice::uploadBufferData(Buffer& buffer, const void* data, size_t o
     void* mappedData = nullptr;
     vmaMapMemory(mAllocator, buffer.allocation, &mappedData);
     memcpy((u8*)mappedData + offset, data, dataSize);
+    vmaUnmapMemory(mAllocator, buffer.allocation);
+}
+
+void VKRenderDevice::downloadBuferData(Buffer& buffer, void* outData, size_t offset, size_t dataSize)
+{
+    void* mappedData = nullptr;
+    vmaMapMemory(mAllocator, buffer.allocation, &mappedData);
+    memcpy(outData, (u8*)mappedData + offset, dataSize);
     vmaUnmapMemory(mAllocator, buffer.allocation);
 }
 
@@ -662,18 +785,18 @@ bool VKRenderDevice::createImageView(VkFormat format, VkImageAspectFlags aspectF
     return true;
 }
 
-bool VKRenderDevice::createTextureSampler(Texture& texture)
+bool VKRenderDevice::createTextureSampler(Texture& texture, VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode)
 {
     const VkSamplerCreateInfo samplerInfo = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .magFilter = VK_FILTER_LINEAR,
-        .minFilter = VK_FILTER_LINEAR,
+        .magFilter = magFilter,
+        .minFilter = minFilter,
         .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeU = addressMode, // VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV = addressMode, // VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW = addressMode, // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE VK_SAMPLER_ADDRESS_MODE_REPEAT,
         .mipLodBias = 0.0f,
         .anisotropyEnable = VK_FALSE,
         .maxAnisotropy = 1,
@@ -1074,6 +1197,13 @@ bool VKRenderDevice::createDescriptorPool(u32 uniformBufferCount, u32 storageBuf
     return true;
 }
 
+bool VKRenderDevice::createDescriptorPool(VkDescriptorPoolCreateInfo createInfo, VkDescriptorPool& descriptorPool)
+{
+    VK_CHECK(vkCreateDescriptorPool(mDevice.getLogical(), &createInfo, nullptr, &descriptorPool));
+
+    return true;
+}
+
 bool VKRenderDevice::createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& layout)
 {
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
@@ -1429,7 +1559,8 @@ bool VKRenderDevice::createPipelineLayoutWithConstants(const VkDescriptorSetLayo
         .setLayoutCount = 1,
         .pSetLayouts = &descriptorLayout,
         .pushConstantRangeCount = constSize,
-        .pPushConstantRanges = (constSize == 0) ? nullptr : (vertexConstSize > 0 ? ranges : &ranges[1])};
+        .pPushConstantRanges = (constSize == 0) ? nullptr : (vertexConstSize > 0 ? ranges : &ranges[1]),
+    };
 
     VK_CHECK(vkCreatePipelineLayout(mDevice.getLogical(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
@@ -1781,6 +1912,129 @@ void VKRenderDevice::destroyPipelineLayout(VkPipelineLayout pipelineLayout)
 void VKRenderDevice::destroyFramebuffer(VkFramebuffer frameBuffer)
 {
     vkDestroyFramebuffer(mDevice.getLogical(), frameBuffer, nullptr);
+}
+
+bool VKRenderDevice::createComputePipeline(VkPipeline& pipeline, VkPipelineLayout pipelineLayout, VkShaderModule computeShader)
+{
+    VkComputePipelineCreateInfo computePipelineCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stage = {
+            // single compute stage
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_COMPUTE_BIT,
+            .module = computeShader,
+            .pName = "main",
+            // no specialization
+            .pSpecializationInfo = nullptr,
+        },
+        .layout = pipelineLayout,
+        .basePipelineHandle = 0,
+        .basePipelineIndex = 0};
+
+    // no chaching for now
+    VK_CHECK(vkCreateComputePipelines(mDevice.getLogical(), 0, 1, &computePipelineCreateInfo, nullptr, &pipeline));
+
+    return true;
+}
+
+bool VKRenderDevice::executeComputeShader(VkPipeline computePipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet,
+                                          u32 xsize, u32 ysize, u32 zsize)
+{
+    VkCommandBuffer commandBuffer = mComputeCommandBuffer;
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = nullptr,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = nullptr,
+    };
+
+    VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+
+    vkCmdDispatch(commandBuffer, xsize, ysize, zsize);
+
+    VkMemoryBarrier readoutBarrier = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_HOST_READ_BIT,
+    };
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &readoutBarrier, 0, nullptr, 0, nullptr);
+
+    VK_CHECK(vkEndCommandBuffer(commandBuffer));
+
+    const VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = nullptr,
+        .pWaitDstStageMask = nullptr,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = nullptr,
+    };
+
+    auto computeQueue = mDevice.getComputeQueue();
+
+    VK_CHECK(vkQueueSubmit(computeQueue, 1, &submitInfo, 0));
+    VK_CHECK(vkQueueWaitIdle(computeQueue));
+
+    return true;
+}
+
+bool VKRenderDevice::createFence(VkFence& fence, VkFenceCreateFlags flags)
+{
+    VkFenceCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = flags,
+    };
+
+    VK_CHECK(vkCreateFence(mDevice.getLogical(), &createInfo, nullptr, &fence));
+
+    return true;
+}
+
+void VKRenderDevice::destroyFence(VkFence fence)
+{
+    vkDestroyFence(mDevice.getLogical(), fence, nullptr);
+}
+
+void VKRenderDevice::waitFence(VkFence fence)
+{
+    auto device = mDevice.getLogical();
+
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &fence);
+}
+
+bool VKRenderDevice::submitCompute(const VkCommandBuffer& commandBuffer, VkFence fence)
+{
+    const VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = nullptr,
+        .pWaitDstStageMask = nullptr,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = nullptr,
+    };
+
+    VK_CHECK(vkQueueSubmit(mDevice.getComputeQueue(), 1, &submitInfo, fence));
+
+    return true;
 }
 
 } // namespace Suoh

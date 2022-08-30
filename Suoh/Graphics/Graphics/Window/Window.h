@@ -28,6 +28,12 @@ struct WindowProperties
     std::string title{""};
 };
 
+struct Resolution
+{
+    u32 width{0};
+    u32 height{0};
+};
+
 class Window
 {
 public:
@@ -64,6 +70,8 @@ private:
     static void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void onResizeCallback(GLFWwindow* window, int width, int height);
     static void onScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
+
+    Resolution detectResolution();
 
 private:
     GLFWwindow* mWindow{nullptr};

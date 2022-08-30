@@ -1,11 +1,10 @@
 #pragma once
 
+#include <Graphics/Scene/VertexData.h>
+
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <meshoptimizer.h>
-
-#include <Graphics/Scene/VertexData.h>
 
 namespace Suoh
 {

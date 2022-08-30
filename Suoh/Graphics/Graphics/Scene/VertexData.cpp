@@ -8,6 +8,8 @@
 namespace Suoh
 {
 
+namespace fs = std::filesystem;
+
 static constexpr auto MESH_HEADER_MAGIC_NUMBER = 0x12345678;
 
 void recalculateBoundingBoxes(MeshData& meshData)
@@ -167,7 +169,7 @@ std::vector<DrawData> loadDrawData(const std::string& filePath)
     std::ifstream inFile(filePath, std::ios::out | std::ios::binary);
     if (!inFile)
     {
-        LOG_ERROR("loadDrawData: failed to open ", filePath);
+        LOG_ERROR("loadDrawData: failed to open ", fs::absolute(filePath));
         return drawData;
     }
 

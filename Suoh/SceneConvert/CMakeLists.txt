@@ -1,4 +1,4 @@
-project(suoh-appplication VERSION 1.0.0 DESCRIPTION "Suoh application")
+project(sceneconvert VERSION 1.0.0 DESCRIPTION "Scene conversion executable")
 
 file(GLOB_RECURSE SOURCE_FILES "*.cpp" "*.h")
 
@@ -9,9 +9,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	core
 	graphics
-	imgui
-	# XXX: make this adjustable from cli
+	meshoptimizer
 	# OptickCore
 )
-
-target_precompile_headers(${PROJECT_NAME} PRIVATE "Application/suohpch.h")

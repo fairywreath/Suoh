@@ -25,10 +25,18 @@ public:
     VkQueue getGraphicsQueue() const;
     u32 getGraphicsFamily() const;
 
+    VkQueue getComputeQueue() const;
+    u32 getComputeFamily() const;
+    bool computeCapable() const;
+
     VkQueue getPresentQueue() const;
     u32 getPresentFamily() const;
 
-    const VkPhysicalDeviceProperties& getPhysDeviceProperties() const;
+    u32 getQueueFamilyIndicesCount() const;
+    std::vector<u32> getQueueFamilyIndices() const;
+
+    const VkPhysicalDeviceProperties&
+    getPhysDeviceProperties() const;
 
 private:
     void initPhysDevice();
@@ -44,8 +52,14 @@ private:
     VkQueue mGraphicsQueue;
     u32 mGraphicsFamily{};
 
+    VkQueue mComputeQueue;
+    u32 mComputeFamily{};
+    bool mUseCompute{};
+
     VkQueue mPresentQueue;
     u32 mPresentFamily{};
+
+    u32 mQueueFamilyIndicesCount{};
 
     VkPhysicalDeviceProperties mPhysDeviceProperties;
     VkPhysicalDeviceFeatures mPhysDeviceFeatures;

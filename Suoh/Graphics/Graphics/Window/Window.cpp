@@ -30,6 +30,10 @@ bool Window::init(const WindowProperties& props)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
+    // const auto resolution = detectResolution();
+    // mWidth = resolution.width;
+    // mHeight = resolution.height;
+
     mWindow = glfwCreateWindow(mWidth, mHeight, mTitle.c_str(), nullptr, nullptr);
     if (mWindow == nullptr)
     {
@@ -175,6 +179,27 @@ void Window::removeObserver(WindowObserver& observer)
     assert(found != mObservers.end());
 
     mObservers.erase(found);
+}
+
+Resolution Window::detectResolution()
+{
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const int code = glfwGetError(nullptr);
+
+    if (code != 0)
+    {
+        return Resolution{};
+    }
+
+    const GLFWvidmode* info = glfwGetVideoMode(monitor);
+
+    const u32 windowW = (u32)info->width;
+    const u32 windowH = (u32)info->height;
+
+    return Resolution{
+        .width = windowW,
+        .height = windowH,
+    };
 }
 
 } // namespace Suoh

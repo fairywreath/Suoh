@@ -99,11 +99,16 @@ void MainRenderer::init()
     // mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "Resources/rubber_duck/textures/Duck_baseColor.png", sizeof(ModelUniformBuffer));
     // mModelRenderer->loadModel("../../../Resources/backpack/backpack.obj", "../../../Resources/backpack/diffuse.jpg", sizeof(ModelUniformBuffer));
 
-    mMultiMeshRenderer = std::make_unique<MultiMeshRenderer>(mRenderDevice.get(), &mWindow);
-    mMultiMeshRenderer->loadMeshes("../../../Resources/bistro/test.meshes",
-                                   "../../../Resources/bistro/test.meshes.drawdata", "",
-                                   "../../../Suoh/Shaders/MultiMesh.vert",
-                                   "../../../Suoh/Shaders/MultiMesh.frag");
+    // mMultiMeshRenderer = std::make_unique<MultiMeshRenderer>(mRenderDevice.get(), &mWindow);
+    // mMultiMeshRenderer->loadMeshes("../../../Resources/bistro/test.meshes",
+    //                                "../../../Resources/bistro/test.meshes.drawdata", "",
+    //                                "../../../Suoh/Shaders/MultiMesh.vert",
+    //                                "../../../Suoh/Shaders/MultiMesh.frag");
+
+    // mMultiMeshRenderer->loadMeshes("../../../Resources/shibahu/shibahu.meshes",
+    //                                "../../../Resources/shibahu/shibahu.drawdata", "",
+    //                                "../../../Suoh/Shaders/MultiMesh.vert",
+    //                                "../../../Suoh/Shaders/MultiMesh.frag");
 
     // mMultiMeshRenderer->loadMeshes("../../../Resources/nimbasa/nimbasa.smesh",
     //                                "../../../Resources/nimbasa/nimbasa_draw.smesh", "",
@@ -115,8 +120,19 @@ void MainRenderer::init()
     //                                "../../../Suoh/Shaders/MultiMesh.vert",
     //                                "../../../Suoh/Shaders/MultiMesh.frag");
 
-    mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, Image());
-    mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, Image());
+    mPBRModelRenderer = std::make_unique<PBRModelRenderer>(mRenderDevice.get(), &mWindow, Image(),
+                                                           sizeof(PBRModelRenderer::UniformBuffer),
+                                                           "../../../Resources/DamagedHelmet/glTF/DamagedHelmet.gltf",
+                                                           "../../../Resources/DamagedHelmet/glTF/Default_AO.jpg",
+                                                           "../../../Resources/DamagedHelmet/glTF/Default_emissive.jpg",
+                                                           "../../../Resources/DamagedHelmet/glTF/Default_albedo.jpg",
+                                                           "../../../Resources/DamagedHelmet/glTF/Default_metalRoughness.jpg",
+                                                           "../../../Resources/DamagedHelmet/glTF/Default_normal.jpg",
+                                                           "../../../Resources/piazza_bologni_1k.hdr",
+                                                           "../../../Resources/piazza_bologni_1k_irradiance.hdr");
+
+    mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
+    mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
 
     ImGui::CreateContext();
     mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), &mWindow);
@@ -124,12 +140,17 @@ void MainRenderer::init()
     // mCubeRenderer = std::make_unique<CubeRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
     // mCubeRenderer->loadCubeMap("Resources/piazza_bologni_1k.hdr");
 
+    // mQuadRenderer = std::make_unique<QuadRenderer>(mRenderDevice.get(), &mWindow, std::vector<std::string>{});
+
     mRenderers = {
         mClearRenderer.get(),
         // mCubeRenderer.get(),
         // mModelRenderer.get(),
         // mCanvasRenderer.get(),
-        mMultiMeshRenderer.get(),
+        // mMultiMeshRenderer.get(),
+
+        mPBRModelRenderer.get(),
+
         mGuiRenderer.get(),
         mFinishRenderer.get(),
     };
@@ -179,11 +200,11 @@ void MainRenderer::update(float deltaSeconds)
 
     const mat4 view = mCamera.getViewMatrix();
 
-    const ModelUniformBuffer ubo = {
-        .mvp = p * view * m1,
-    };
+    // const ModelUniformBuffer ubo = {
+    //     .mvp = p * view * m1,
+    // };
 
-    mMultiMeshRenderer->updateUniformBuffer(ubo.mvp);
+    // mMultiMeshRenderer->updateUniformBuffer(ubo.mvp);
 
     // mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
 
@@ -194,6 +215,28 @@ void MainRenderer::update(float deltaSeconds)
     // mCubeRenderer->updateUniformBuffer(p * view * cubeRot);
 
     // mCanvasRenderer->updateUniformBuffer(ubo.mvp, 0);
+
+    /*
+     * PBR test.
+     */
+    const mat4 scale = glm::scale(mat4(1.0f), vec3(5.0f));
+    const mat4 rot1 = glm::rotate(mat4(1.0f), glm::radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+    const mat4 rot2 = glm::rotate(mat4(1.0f), glm::radians(180.0f), vec3(0.0f, 0.0f, 1.0f));
+    const mat4 rot = rot1 * rot2;
+    const mat4 pos = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, +1.0f));
+    const mat4 m = glm::rotate(scale * rot * pos, (float)glfwGetTime() * -0.1f, vec3(0.0f, 0.0f, 1.0f));
+    const mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
+    const mat4 mvp = proj * view * m;
+
+    const mat4 mv = view * m;
+
+    auto ubo = PBRModelRenderer::UniformBuffer{
+        .mvp = mvp,
+        .mv = mv,
+        .m = m,
+        .cameraPos = vec4(mCamera.getPosition(), 1.0f),
+    };
+    mPBRModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
 }
 
 void MainRenderer::composeFrame()
