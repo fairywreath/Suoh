@@ -9,15 +9,15 @@ namespace Suoh
  */
 void GuiWindowObserver::onCursorPos(double x, double y)
 {
-    ImGui::GetIO().MousePos = ImVec2((float)x, (float)y);
+    //ImGui::GetIO().MousePos = ImVec2((float)x, (float)y);
 }
 
 void GuiWindowObserver::onMouseButton(int key, int action, int mods)
 {
-    auto& io = ImGui::GetIO();
-    const int idx = (key == GLFW_MOUSE_BUTTON_LEFT) ? 0
-                                                    : ((key == GLFW_MOUSE_BUTTON_RIGHT) ? 2 : 1);
-    io.MouseDown[idx] = action == GLFW_PRESS;
+    //auto& io = ImGui::GetIO();
+    //const int idx = (key == GLFW_MOUSE_BUTTON_LEFT) ? 0
+    //                                                : ((key == GLFW_MOUSE_BUTTON_RIGHT) ? 2 : 1);
+    //io.MouseDown[idx] = action == GLFW_PRESS;
 }
 
 void GuiWindowObserver::onKey(int key, int scancode, int action, int mods)

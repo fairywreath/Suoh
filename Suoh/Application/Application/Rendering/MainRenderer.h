@@ -15,6 +15,8 @@
 
 #include "Renderers/PBRModelRenderer.h"
 
+#include "MultiRenderer.h"
+
 #include "Camera.h"
 #include "FramesPerSecondCounter.h"
 
@@ -81,18 +83,27 @@ private:
     Window& mWindow;
     std::unique_ptr<VKRenderDevice> mRenderDevice{nullptr};
 
-    std::unique_ptr<ModelRenderer> mModelRenderer{nullptr};
-    std::unique_ptr<PBRModelRenderer> mPBRModelRenderer{nullptr};
+    // std::unique_ptr<ModelRenderer> mModelRenderer{nullptr};
+    // std::unique_ptr<PBRModelRenderer> mPBRModelRenderer{nullptr};
 
-    std::unique_ptr<ClearRenderer> mClearRenderer{nullptr};
-    std::unique_ptr<FinishRenderer> mFinishRenderer{nullptr};
-    std::unique_ptr<CanvasRenderer> mCanvasRenderer{nullptr};
-    std::unique_ptr<GuiRenderer> mGuiRenderer{nullptr};
-    std::unique_ptr<CubeRenderer> mCubeRenderer{nullptr};
+     std::unique_ptr<ClearRenderer> mClearRenderer{nullptr};
+     std::unique_ptr<FinishRenderer> mFinishRenderer{nullptr};
+    // std::unique_ptr<CanvasRenderer> mCanvasRenderer{nullptr};
+    // std::unique_ptr<GuiRenderer> mGuiRenderer{nullptr};
+    // std::unique_ptr<CubeRenderer> mCubeRenderer{nullptr};
 
-    std::unique_ptr<MultiMeshRenderer> mMultiMeshRenderer{nullptr};
+    // std::unique_ptr<MultiMeshRenderer> mMultiMeshRenderer{nullptr};
 
-    std::vector<RendererBase*> mRenderers;
+    // std::vector<RendererBase*> mRenderers;
+
+    Texture envMap;
+    Texture irrMap;
+
+    SceneData sceneData1;
+    std::unique_ptr<MultiRenderer> mMultiRenderer1;
+
+    SceneData sceneData2;
+    std::unique_ptr<MultiRenderer> mMultiRenderer2;
 
     FpsCameraWindowObserver mFpsCamWindowObserver;
     Camera mCamera;

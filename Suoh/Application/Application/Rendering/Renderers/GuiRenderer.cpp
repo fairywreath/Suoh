@@ -47,7 +47,7 @@ GuiRenderer::~GuiRenderer()
 
 void GuiRenderer::init()
 {
-    createFontTexture("resources/OpenSans-Light.ttf", mFontTexture.image);
+    createFontTexture("../../../../../Resources/OpenSans-Light.ttf", mFontTexture.image);
     mRenderDevice->createImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mFontTexture.image);
     mRenderDevice->createTextureSampler(mFontTexture);
 
@@ -77,8 +77,8 @@ void GuiRenderer::init()
 
     mRenderDevice->createGraphicsPipeline(mWindow->getWidth(), mWindow->getHeight(), mRenderPass, mPipelineLayout,
                                           std::vector<std::string>{
-                                              "../../../Suoh/Shaders/Imgui.vert",
-                                              "../../../Suoh/Shaders/Imgui.frag",
+                                              "../../../../../Suoh/Shaders/Imgui.vert",
+                                              "../../../../../Suoh/Shaders/Imgui.frag",
                                           },
                                           VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, mGraphicsPipeline,
                                           true, true, true);

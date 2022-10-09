@@ -113,7 +113,7 @@ MeshFileHeader loadMeshData(const std::string& filePath, MeshData& meshData)
     std::ifstream inFile(filePath, std::ios::out | std::ios::binary);
     if (!inFile)
     {
-        LOG_ERROR("loadMeshData: failed to open ", filePath);
+        LOG_ERROR("loadMeshData: failed to open ", fs::absolute(filePath));
         return header;
     }
 

@@ -15,8 +15,7 @@ namespace Suoh
  * Window input callbacks to control camera
  */
 FpsCameraWindowObserver::FpsCameraWindowObserver(Window& window)
-    : mWindow(window),
-      mCameraController(glm::vec3(0.0f, -5.0f, 15.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f))
+    : mWindow(window), mCameraController(glm::vec3(0.0f, -5.0f, 15.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f))
 {
     mWindow.addObserver(*this);
 }
@@ -84,9 +83,7 @@ FirstPersonCameraController& FpsCameraWindowObserver::getCameraController()
  * Main renderer
  */
 MainRenderer::MainRenderer(Window& window)
-    : mWindow(window),
-      mFpsCamWindowObserver(mWindow),
-      mCamera(mFpsCamWindowObserver.getCameraController())
+    : mWindow(window), mFpsCamWindowObserver(mWindow), mCamera(mFpsCamWindowObserver.getCameraController())
 {
     init();
 }
@@ -95,15 +92,41 @@ void MainRenderer::init()
 {
     mRenderDevice = std::make_unique<VKRenderDevice>(&mWindow);
 
+    envMap = mRenderDevice->createCubemapTexture("../../../../../Resources/piazza_bologni_1k.hdr");
+    irrMap = mRenderDevice->createCubemapTexture("../../../../../Resources/piazza_bologni_1k_irradiance.hdr");
+
+    sceneData1
+        = SceneData(*mRenderDevice, "../../../../../Resources/bistro/exterior.meshes", "../../../../../Resources/bistro/exterior.scene",
+                    "../../../../../Resources/bistro/exterior.materials", envMap, irrMap);
+
+    mMultiRenderer1
+        = std::make_unique<MultiRenderer>(*mRenderDevice, sceneData1, "shaders/chapter07/VK01.vert", "shaders/chapter07/VK01.frag");
+
+    //    sceneData2
+    //    = SceneData(*mRenderDevice, "../../../../../Resources/bistro/interior.meshes", "../../../../../Resources/bistro/interior.scene",
+    //                "../../../../../Resources/bistro/interior.materials", envMap, irrMap);
+    //mMultiRenderer2
+    //    = std::make_unique<MultiRenderer>(*mRenderDevice, sceneData2, "shaders/chapter07/VK01.vert", "shaders/chapter07/VK01.frag");
+
+    //sceneData2
+    //    = SceneData(*mRenderDevice, "../../../../../Resources/bistro/interior.meshes", "../../../../../Resources/bistro/interior.scene",
+    //                "../../../../../Resources/bistro/interior.materials", envMap, irrMap);
+
     // mModelRenderer = std::make_unique<ModelRenderer>(mRenderDevice.get(), &mWindow);
-    // mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "Resources/rubber_duck/textures/Duck_baseColor.png", sizeof(ModelUniformBuffer));
-    // mModelRenderer->loadModel("../../../Resources/backpack/backpack.obj", "../../../Resources/backpack/diffuse.jpg", sizeof(ModelUniformBuffer));
+    // mModelRenderer->loadModel("Resources/rubber_duck/scene.gltf", "Resources/rubber_duck/textures/Duck_baseColor.png",
+    // sizeof(ModelUniformBuffer)); mModelRenderer->loadModel("../../../Resources/backpack/backpack.obj",
+    // "../../../Resources/backpack/diffuse.jpg", sizeof(ModelUniformBuffer));
 
     // mMultiMeshRenderer = std::make_unique<MultiMeshRenderer>(mRenderDevice.get(), &mWindow);
-    // mMultiMeshRenderer->loadMeshes("../../../Resources/bistro/test.meshes",
-    //                                "../../../Resources/bistro/test.meshes.drawdata", "",
-    //                                "../../../Suoh/Shaders/MultiMesh.vert",
-    //                                "../../../Suoh/Shaders/MultiMesh.frag");
+    // mMultiMeshRenderer->loadMeshes("Resources/EmeraldSquare_v4_1/emerald_day.sm",
+    //                                "Resources/EmeraldSquare_v4_1/emerald_day.sm.drawdata", "",
+    //                                "Shaders/MultiMesh.vert", "Shaders/MultiMesh.frag");
+
+    // mMultiMeshRenderer = std::make_unique<MultiMeshRenderer>(mRenderDevice.get(), &mWindow);
+    // mMultiMeshRenderer->loadMeshes("../../../../../Resources/bistro/test.meshes",
+    //                                "../../../../../Resources/bistro/test.meshes.drawdata", "",
+    //                                "../../../../../Suoh/Shaders/MultiMesh.vert",
+    //                                "../../../../../Suoh/Shaders/MultiMesh.frag");
 
     // mMultiMeshRenderer->loadMeshes("../../../Resources/shibahu/shibahu.meshes",
     //                                "../../../Resources/shibahu/shibahu.drawdata", "",
@@ -120,60 +143,66 @@ void MainRenderer::init()
     //                                "../../../Suoh/Shaders/MultiMesh.vert",
     //                                "../../../Suoh/Shaders/MultiMesh.frag");
 
-    mPBRModelRenderer = std::make_unique<PBRModelRenderer>(mRenderDevice.get(), &mWindow, Image(),
-                                                           sizeof(PBRModelRenderer::UniformBuffer),
-                                                           "../../../Resources/DamagedHelmet/glTF/DamagedHelmet.gltf",
-                                                           "../../../Resources/DamagedHelmet/glTF/Default_AO.jpg",
-                                                           "../../../Resources/DamagedHelmet/glTF/Default_emissive.jpg",
-                                                           "../../../Resources/DamagedHelmet/glTF/Default_albedo.jpg",
-                                                           "../../../Resources/DamagedHelmet/glTF/Default_metalRoughness.jpg",
-                                                           "../../../Resources/DamagedHelmet/glTF/Default_normal.jpg",
-                                                           "../../../Resources/piazza_bologni_1k.hdr",
-                                                           "../../../Resources/piazza_bologni_1k_irradiance.hdr");
+    // mPBRModelRenderer = std::make_unique<PBRModelRenderer>(mRenderDevice.get(), &mWindow, Image(),
+    //                                                        sizeof(PBRModelRenderer::UniformBuffer),
+    //                                                        "../../../Resources/DamagedHelmet/glTF/DamagedHelmet.gltf",
+    //                                                        "../../../Resources/DamagedHelmet/glTF/Default_AO.jpg",
+    //                                                        "../../../Resources/DamagedHelmet/glTF/Default_emissive.jpg",
+    //                                                        "../../../Resources/DamagedHelmet/glTF/Default_albedo.jpg",
+    //                                                        "../../../Resources/DamagedHelmet/glTF/Default_metalRoughness.jpg",
+    //                                                        "../../../Resources/DamagedHelmet/glTF/Default_normal.jpg",
+    //                                                        "../../../Resources/piazza_bologni_1k.hdr",
+    //                                                        "../../../Resources/piazza_bologni_1k_irradiance.hdr");
 
-    mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
-    mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
+     mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, mMultiRenderer1->getDepthImage());
+     mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, mMultiRenderer1->getDepthImage());
 
-    ImGui::CreateContext();
-    mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), &mWindow);
+    // mClearRenderer = std::make_unique<ClearRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
+    // mFinishRenderer = std::make_unique<FinishRenderer>(mRenderDevice.get(), &mWindow, mPBRModelRenderer->getDepthImage());
+
+    // ImGui::CreateContext();
+    // mGuiRenderer = std::make_unique<GuiRenderer>(mRenderDevice.get(), &mWindow);
 
     // mCubeRenderer = std::make_unique<CubeRenderer>(mRenderDevice.get(), &mWindow, mModelRenderer->getDepthImage());
     // mCubeRenderer->loadCubeMap("Resources/piazza_bologni_1k.hdr");
 
     // mQuadRenderer = std::make_unique<QuadRenderer>(mRenderDevice.get(), &mWindow, std::vector<std::string>{});
 
-    mRenderers = {
-        mClearRenderer.get(),
-        // mCubeRenderer.get(),
-        // mModelRenderer.get(),
-        // mCanvasRenderer.get(),
-        // mMultiMeshRenderer.get(),
+    // mRenderers = {
+    //     mClearRenderer.get(),
+    //     // mCubeRenderer.get(),
+    //     // mModelRenderer.get(),
+    //     // mCanvasRenderer.get(),
+    //     mMultiMeshRenderer.get(),
 
-        mPBRModelRenderer.get(),
+    //    // mPBRModelRenderer.get(),
 
-        mGuiRenderer.get(),
-        mFinishRenderer.get(),
-    };
+    //    mGuiRenderer.get(),
+    //    mFinishRenderer.get(),
+    //};
 }
 
 void MainRenderer::render(float deltaSeconds)
 {
-    mRenderDevice->swapchainAcquireNextImage();
+       mRenderDevice->swapchainAcquireNextImage();
 
-    mRenderDevice->resetCommandPool();
+       mRenderDevice->resetCommandPool();
 
-    update(deltaSeconds);
-    composeFrame();
+       update(deltaSeconds);
 
-    mRenderDevice->submit(mRenderDevice->getCurrentCommandBuffer());
+       mMultiRenderer1->updateBuffers();
+       //mMultiRenderer2->updateBuffers();
+       composeFrame();
 
-    mRenderDevice->present();
+       mRenderDevice->submit(mRenderDevice->getCurrentCommandBuffer());
 
-    mRenderDevice->deviceWaitIdle();
+       mRenderDevice->present();
 
-    mFpsCounter.tick(deltaSeconds);
+       mRenderDevice->deviceWaitIdle();
 
-    renderGui();
+       mFpsCounter.tick(deltaSeconds);
+
+       renderGui();
 }
 
 void MainRenderer::update(float deltaSeconds)
@@ -200,10 +229,15 @@ void MainRenderer::update(float deltaSeconds)
 
     const mat4 view = mCamera.getViewMatrix();
 
-    // const ModelUniformBuffer ubo = {
-    //     .mvp = p * view * m1,
-    // };
+    const ModelUniformBuffer ubo = {
+        .mvp = p * view * m1,
+    };
+   
 
+    mMultiRenderer1->setMatrices(p, view);
+    mMultiRenderer1->setCameraPosition(mCamera.getPosition());
+    //mMultiRenderer2->setMatrices(p, view);
+    //mMultiRenderer2->setCameraPosition(mCamera.getPosition());
     // mMultiMeshRenderer->updateUniformBuffer(ubo.mvp);
 
     // mModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
@@ -219,24 +253,24 @@ void MainRenderer::update(float deltaSeconds)
     /*
      * PBR test.
      */
-    const mat4 scale = glm::scale(mat4(1.0f), vec3(5.0f));
-    const mat4 rot1 = glm::rotate(mat4(1.0f), glm::radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-    const mat4 rot2 = glm::rotate(mat4(1.0f), glm::radians(180.0f), vec3(0.0f, 0.0f, 1.0f));
-    const mat4 rot = rot1 * rot2;
-    const mat4 pos = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, +1.0f));
-    const mat4 m = glm::rotate(scale * rot * pos, (float)glfwGetTime() * -0.1f, vec3(0.0f, 0.0f, 1.0f));
-    const mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
-    const mat4 mvp = proj * view * m;
+    // const mat4 scale = glm::scale(mat4(1.0f), vec3(5.0f));
+    // const mat4 rot1 = glm::rotate(mat4(1.0f), glm::radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+    // const mat4 rot2 = glm::rotate(mat4(1.0f), glm::radians(180.0f), vec3(0.0f, 0.0f, 1.0f));
+    // const mat4 rot = rot1 * rot2;
+    // const mat4 pos = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, +1.0f));
+    // const mat4 m = glm::rotate(scale * rot * pos, (float)glfwGetTime() * -0.1f, vec3(0.0f, 0.0f, 1.0f));
+    // const mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
+    // const mat4 mvp = proj * view * m;
 
-    const mat4 mv = view * m;
+    // const mat4 mv = view * m;
 
-    auto ubo = PBRModelRenderer::UniformBuffer{
-        .mvp = mvp,
-        .mv = mv,
-        .m = m,
-        .cameraPos = vec4(mCamera.getPosition(), 1.0f),
-    };
-    mPBRModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
+    // auto ubo = PBRModelRenderer::UniformBuffer{
+    //     .mvp = mvp,
+    //     .mv = mv,
+    //     .m = m,
+    //     .cameraPos = vec4(mCamera.getPosition(), 1.0f),
+    // };
+    // mPBRModelRenderer->updateUniformBuffer(&ubo, sizeof(ubo));
 }
 
 void MainRenderer::composeFrame()
@@ -253,10 +287,15 @@ void MainRenderer::composeFrame()
 
     VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-    for (auto& renderer : mRenderers)
-    {
-        renderer->recordCommands(commandBuffer);
-    }
+    // for (auto& renderer : mRenderers)
+    //{
+    //     renderer->recordCommands(commandBuffer);
+    // }
+
+    mClearRenderer->recordCommands(commandBuffer);
+    mMultiRenderer1->fillCommandBuffer(commandBuffer);
+    //mMultiRenderer2->fillCommandBuffer(commandBuffer);
+    mFinishRenderer->recordCommands(commandBuffer);
 
     vkEndCommandBuffer(commandBuffer);
 }
@@ -272,56 +311,60 @@ std::string currentComboBoxItem = cameraType;
 
 void MainRenderer::renderGui()
 {
-    auto width = mWindow.getWidth();
-    auto height = mWindow.getHeight();
+    // auto width = mWindow.getWidth();
+    // auto height = mWindow.getHeight();
 
-    ImGuiIO& io = ImGui::GetIO();
-    io.DisplaySize = ImVec2((float)width, (float)height);
-    ImGui::NewFrame();
+    // ImGuiIO& io = ImGui::GetIO();
+    // io.DisplaySize = ImVec2((float)width, (float)height);
+    // ImGui::NewFrame();
 
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground;
+    // const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+    //                                | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs
+    //                                | ImGuiWindowFlags_NoBackground;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::Begin("Statistics", nullptr, flags);
-    ImGui::TextColored(ImVec4(0, 0, 0, 1), "FPS: %.3f", mFpsCounter.getFps());
-    ImGui::End();
+    // ImGui::SetNextWindowPos(ImVec2(0, 0));
+    // ImGui::Begin("Statistics", nullptr, flags);
+    // ImGui::TextColored(ImVec4(0, 0, 0, 1), "FPS: %.3f", mFpsCounter.getFps());
+    // ImGui::End();
 
-    ImGui::Begin("Camera Control", nullptr);
-    {
-        if (ImGui::BeginCombo("##combo", currentComboBoxItem.c_str())) // The second parameter is the label previewed before opening the combo.
-        {
-            for (int n = 0; n < IM_ARRAYSIZE(comboBoxItems); n++)
-            {
-                const bool isSelected = (currentComboBoxItem == comboBoxItems[n]);
+    // ImGui::Begin("Camera Control", nullptr);
+    //{
+    //     if (ImGui::BeginCombo("##combo",
+    //                           currentComboBoxItem.c_str())) // The second parameter is the label previewed before opening the combo.
+    //     {
+    //         for (int n = 0; n < IM_ARRAYSIZE(comboBoxItems); n++)
+    //         {
+    //             const bool isSelected = (currentComboBoxItem == comboBoxItems[n]);
 
-                if (ImGui::Selectable(comboBoxItems[n].c_str(), isSelected))
-                    currentComboBoxItem = comboBoxItems[n];
+    //            if (ImGui::Selectable(comboBoxItems[n].c_str(), isSelected))
+    //                currentComboBoxItem = comboBoxItems[n];
 
-                if (isSelected)
-                    ImGui::SetItemDefaultFocus(); // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
-            }
-            ImGui::EndCombo();
-        }
+    //            if (isSelected)
+    //                ImGui::SetItemDefaultFocus(); // You may set the initial focus when opening the combo (scrolling + for keyboard
+    //                                              // navigation support)
+    //        }
+    //        ImGui::EndCombo();
+    //    }
 
-        if (cameraType == "Free Moving")
-        {
-            if (ImGui::SliderFloat3("Position", glm::value_ptr(mFreeMovingCameraPos), -10.0f, +10.0f))
-                mFreeMovingCameraController.setDesiredPosition(mFreeMovingCameraPos);
-            if (ImGui::SliderFloat3("Pitch/Pan/Roll", glm::value_ptr(mFreeMovingCameraAngles), -90.0f, +90.0f))
-                mFreeMovingCameraController.setDesiredAngles(mFreeMovingCameraAngles);
-        }
+    //    if (cameraType == "Free Moving")
+    //    {
+    //        if (ImGui::SliderFloat3("Position", glm::value_ptr(mFreeMovingCameraPos), -10.0f, +10.0f))
+    //            mFreeMovingCameraController.setDesiredPosition(mFreeMovingCameraPos);
+    //        if (ImGui::SliderFloat3("Pitch/Pan/Roll", glm::value_ptr(mFreeMovingCameraAngles), -90.0f, +90.0f))
+    //            mFreeMovingCameraController.setDesiredAngles(mFreeMovingCameraAngles);
+    //    }
 
-        if (currentComboBoxItem != cameraType)
-        {
-            LOG_INFO("Selected new camera type: ", currentComboBoxItem);
-            cameraType = currentComboBoxItem;
-            reinitCamera();
-        }
-    }
-    ImGui::End();
+    //    if (currentComboBoxItem != cameraType)
+    //    {
+    //        LOG_INFO("Selected new camera type: ", currentComboBoxItem);
+    //        cameraType = currentComboBoxItem;
+    //        reinitCamera();
+    //    }
+    //}
+    // ImGui::End();
 
-    ImGui::Render();
-    mGuiRenderer->updateBuffers(ImGui::GetDrawData());
+    // ImGui::Render();
+    // mGuiRenderer->updateBuffers(ImGui::GetDrawData());
 }
 
 void MainRenderer::reinitCamera()

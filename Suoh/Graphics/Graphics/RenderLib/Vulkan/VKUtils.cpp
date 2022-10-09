@@ -3,6 +3,8 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
+#include "../Descriptors/Resources.h"
+
 namespace Suoh
 {
 
@@ -172,5 +174,8 @@ Bitmap convertVerticalCrossToCubeMapFaces(const Bitmap& b)
 
     return cubemap;
 }
+
+
+
 
 } // namespace Suoh

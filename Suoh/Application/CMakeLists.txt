@@ -14,4 +14,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	# OptickCore
 )
 
-target_precompile_headers(${PROJECT_NAME} PRIVATE "Application/suohpch.h")
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "")
+
+# target_precompile_headers(${PROJECT_NAME} PRIVATE "Application/suohpch.h")

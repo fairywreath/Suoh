@@ -6,8 +6,13 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-using glm::vec3;
-using glm::vec4;
+#include "Types.h"
+
+//#ifdef __GNUC__
+#define PACKED_STRUCT __attribute__((packed, aligned(1)))
+//#else
+//#define PACKED_STRUCT
+//#endif
 
 namespace Suoh
 {
@@ -25,8 +30,7 @@ struct BoundingBox
     vec3 min;
     vec3 max;
     BoundingBox() = default;
-    BoundingBox(const vec3& min, const vec3& max)
-        : min(glm::min(min, max)), max(glm::max(min, max))
+    BoundingBox(const vec3& min, const vec3& max) : min(glm::min(min, max)), max(glm::max(min, max))
     {
     }
     BoundingBox(const vec3* points, size_t numPoints)
@@ -53,14 +57,8 @@ struct BoundingBox
     void transform(const glm::mat4& t)
     {
         vec3 corners[] = {
-            vec3(min.x, min.y, min.z),
-            vec3(min.x, max.y, min.z),
-            vec3(min.x, min.y, max.z),
-            vec3(min.x, max.y, max.z),
-            vec3(max.x, min.y, min.z),
-            vec3(max.x, max.y, min.z),
-            vec3(max.x, min.y, max.z),
-            vec3(max.x, max.y, max.z),
+            vec3(min.x, min.y, min.z), vec3(min.x, max.y, min.z), vec3(min.x, min.y, max.z), vec3(min.x, max.y, max.z),
+            vec3(max.x, min.y, min.z), vec3(max.x, max.y, min.z), vec3(max.x, min.y, max.z), vec3(max.x, max.y, max.z),
         };
         for (auto& v : corners)
             v = vec3(t * vec4(v, 1.0f));
@@ -79,8 +77,7 @@ struct BoundingBox
     }
 };
 
-template <typename T>
-T clamp(T v, T a, T b)
+template <typename T> T clamp(T v, T a, T b)
 {
     if (v < a)
         return a;
@@ -126,11 +123,8 @@ inline void getFrustumCorners(glm::mat4 mvp, glm::vec4* points)
 {
     using glm::vec4;
 
-    const vec4 corners[] = {
-        vec4(-1, -1, -1, 1), vec4(1, -1, -1, 1),
-        vec4(1, 1, -1, 1), vec4(-1, 1, -1, 1),
-        vec4(-1, -1, 1, 1), vec4(1, -1, 1, 1),
-        vec4(1, 1, 1, 1), vec4(-1, 1, 1, 1)};
+    const vec4 corners[] = {vec4(-1, -1, -1, 1), vec4(1, -1, -1, 1), vec4(1, 1, -1, 1), vec4(-1, 1, -1, 1),
+                            vec4(-1, -1, 1, 1),  vec4(1, -1, 1, 1),  vec4(1, 1, 1, 1),  vec4(-1, 1, 1, 1)};
 
     const glm::mat4 invMVP = glm::inverse(mvp);
 
@@ -217,5 +211,39 @@ inline BoundingBox combineBoxes(const std::vector<BoundingBox>& boxes)
 
     return BoundingBox(allPoints.data(), allPoints.size());
 }
+
+inline bool mat4IsIdentity(const glm::mat4& m)
+{
+    return (m[0][0] == 1 && m[0][1] == 0 && m[0][2] == 0 && m[0][3] == 0 && m[1][0] == 0 && m[1][1] == 1 && m[1][2] == 0 && m[1][3] == 0
+            && m[2][0] == 0 && m[2][1] == 0 && m[2][2] == 1 && m[2][3] == 0 && m[3][0] == 0 && m[3][1] == 0 && m[3][2] == 0
+            && m[3][3] == 1);
+}
+
+struct PACKED_STRUCT gpuvec4
+{
+    float x, y, z, w;
+
+    gpuvec4() = default;
+    explicit gpuvec4(float v) : x(v), y(v), z(v), w(v)
+    {
+    }
+    gpuvec4(float a, float b, float c, float d) : x(a), y(b), z(c), w(d)
+    {
+    }
+    explicit gpuvec4(const vec4& v) : x(v.x), y(v.y), z(v.z), w(v.w)
+    {
+    }
+};
+
+struct PACKED_STRUCT gpumat4
+{
+    float data_[16];
+
+    gpumat4() = default;
+    explicit gpumat4(const glm::mat4& m)
+    {
+        memcpy(data_, glm::value_ptr(m), 16 * sizeof(float));
+    }
+};
 
 } // namespace Suoh

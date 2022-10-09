@@ -30,8 +30,6 @@ void processLods(std::vector<u32>& indices, std::vector<float>& vertices, std::v
     {
         targetIndicesCount = indices.size() / 2;
 
-        bool sloppy = false;
-
         size_t numOptIndices = meshopt_simplify(
             indices.data(),
             indices.data(), (u32)indices.size(),
@@ -51,7 +49,6 @@ void processLods(std::vector<u32>& indices, std::vector<float>& vertices, std::v
                     vertices.data(), verticesCountIn,
                     sizeof(float) * 3,
                     targetIndicesCount, 0.02f);
-                sloppy = true;
                 if (numOptIndices == indices.size())
                     break;
             }

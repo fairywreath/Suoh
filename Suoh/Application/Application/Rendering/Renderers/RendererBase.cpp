@@ -24,7 +24,9 @@ bool RendererBase::createUniformBuffers(size_t uboSize)
     {
         Buffer& buffer = mUniformBuffers[i];
         if (!mRenderDevice->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                         VMA_MEMORY_USAGE_GPU_ONLY, buffer))
+                                         //VMA_MEMORY_USAGE_GPU_ONLY,
+                                         VMA_MEMORY_USAGE_CPU_ONLY, // need HOST_VISIBLE_BIT apparently
+                                        buffer))
         {
             return false;
         }

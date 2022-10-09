@@ -7,7 +7,9 @@ add_subdirectory(Application)
 add_subdirectory(Graphics)
 add_subdirectory(Vendor)
 
+# Helper/tool executables.
 add_subdirectory(MeshConvert)
+add_subdirectory(SceneConvert)
 
 # XXX: shader compiplation does not seem to wrok...
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")

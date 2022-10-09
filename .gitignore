@@ -1,6 +1,7 @@
 /build
 /Resources
 /Suoh/Archive
+/out
 
 # Prerequisites
 *.d

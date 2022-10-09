@@ -4,9 +4,9 @@ IndentWidth: 4
 # yucks...
 AccessModifierOffset: -4
 
-PointerAlignment: Left   
+PointerAlignment: Left
 ReferenceAlignment: Pointer
 
 BreakBeforeBinaryOperators: All
 
-ColumnLimit: 0
+ColumnLimit: 140

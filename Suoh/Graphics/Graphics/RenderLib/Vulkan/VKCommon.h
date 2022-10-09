@@ -4,6 +4,8 @@
 // #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan.h>
 
+#include <vk_mem_alloc.h>
+
 #include <vector>
 
 // XXX: handle debug errors in a better way, use logging???

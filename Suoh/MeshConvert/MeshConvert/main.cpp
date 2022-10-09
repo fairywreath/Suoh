@@ -5,17 +5,13 @@
 #include "MeshConvert.h"
 #include "argh.h"
 
-using namespace Suoh;
-
-// #include <Graphics/Scene/VtxData.h>
-
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
 #include <meshoptimizer.h>
 
-MeshData g_meshData;
+using namespace Suoh;
 
 int main(int, char* argv[])
 {

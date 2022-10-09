@@ -4,6 +4,7 @@
 
 #include <Core/SuohBase.h>
 
+#include "Graphics/RenderLib/Descriptors/Resources.h"
 #include "Graphics/Window/Window.h"
 
 #include "VKDevice.h"
@@ -11,46 +12,6 @@
 
 namespace Suoh
 {
-
-/*
- * Temp. implementation of graphics resource types
- */
-struct Buffer
-{
-    VkBuffer buffer;
-    VmaAllocation allocation;
-};
-
-struct Image
-{
-    VkImage image = VK_NULL_HANDLE;
-    VkImageView imageView = VK_NULL_HANDLE;
-    VmaAllocation allocation;
-};
-
-struct Texture
-{
-    Image image;
-    VkSampler sampler;
-};
-
-using ShaderBinary = std::vector<u32>;
-
-struct ShaderModule
-{
-    ShaderBinary SPIRV;
-    size_t size;
-    std::string binaryPath;
-
-    VkShaderModule shaderModule;
-};
-
-struct GraphicsPipeline
-{
-    VkRenderPass renderPass;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
-};
 
 enum eRenderPassBit : u8
 {
@@ -67,7 +28,8 @@ struct RenderPassCreateInfo
     u8 flags = 0;
 };
 
-inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t descriptorCount = 1)
+inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(u32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags,
+                                                               u32 descriptorCount = 1)
 {
     return VkDescriptorSetLayoutBinding{
         .binding = binding,
@@ -78,36 +40,82 @@ inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(uint32_t binding,
     };
 }
 
-inline VkWriteDescriptorSet bufferWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorBufferInfo* bi, uint32_t bindIdx, VkDescriptorType dType)
+inline VkWriteDescriptorSet bufferWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorBufferInfo* bi, u32 bindIdx,
+                                                     VkDescriptorType dType)
 {
     return VkWriteDescriptorSet{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        nullptr,
-        ds,
-        bindIdx,
-        0,
-        1,
-        dType,
-        nullptr,
-        bi,
-        nullptr,
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, ds, bindIdx, 0, 1, dType, nullptr, bi, nullptr,
     };
 }
 
-inline VkWriteDescriptorSet imageWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorImageInfo* ii, uint32_t bindIdx)
+inline VkWriteDescriptorSet imageWriteDescriptorSet(VkDescriptorSet ds, const VkDescriptorImageInfo* ii, u32 bindIdx)
 {
     return VkWriteDescriptorSet{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        nullptr,
-        ds,
-        bindIdx,
-        0,
-        1,
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        ii,
-        nullptr,
-        nullptr,
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, ds, bindIdx, 0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ii, nullptr, nullptr,
     };
+}
+
+class VKRenderDevice;
+
+struct RenderPass
+{
+    RenderPass() = default;
+    explicit RenderPass(VKRenderDevice& device, bool useDepth = true, const RenderPassCreateInfo& ci = RenderPassCreateInfo());
+
+    RenderPassCreateInfo info;
+    VkRenderPass handle = VK_NULL_HANDLE;
+};
+
+/*
+ * Misc. higher level resource descriptor helpers, should probably be put somewhere else.
+ */
+inline TextureAttachment makeTextureAttachment(Texture tex, VkShaderStageFlags shaderStageFlags)
+{
+    return TextureAttachment{
+        .descriptorInfo = {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+            .shaderStageFlags = shaderStageFlags,
+        },
+        .texture = tex,
+    };
+}
+
+inline TextureAttachment fsTextureAttachment(Texture tex)
+{
+    return makeTextureAttachment(tex, VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
+inline TextureArrayAttachment fsTextureArrayAttachment(const std::vector<Texture>& textures)
+{
+    return TextureArrayAttachment{
+        .descriptorInfo = 
+        {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+            .shaderStageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+        .textures = textures,
+    };
+}
+
+inline BufferAttachment makeBufferAttachment(Buffer buffer, u32 offset, u32 size, VkDescriptorType type,
+                                             VkShaderStageFlags shaderStageFlags)
+{
+    return BufferAttachment{
+        .descriptorInfo = {.type = type, .shaderStageFlags = shaderStageFlags,},
+                            .buffer = {.buffer = buffer.buffer, .allocation = buffer.allocation, .size = buffer.size,},
+                            .offset = offset,
+                            .size = size,
+        };
+}
+
+inline BufferAttachment uniformBufferAttachment(Buffer buffer, u32 offset, u32 size, VkShaderStageFlags shaderStageFlags)
+{
+    return makeBufferAttachment(buffer, offset, size, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, shaderStageFlags);
+}
+
+inline BufferAttachment storageBufferAttachment(Buffer buffer, u32 offset, u32 size, VkShaderStageFlags shaderStageFlags)
+{
+    return makeBufferAttachment(buffer, offset, size, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStageFlags);
 }
 
 /*
@@ -149,9 +157,11 @@ public:
     bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage, Buffer& buffer);
 
     // loads 3d model, loads to vertex + indices SSBO
-    bool createTexturedVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset);
+    bool createTexturedVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize,
+                                    size_t& indexBufferOffset);
 
-    bool createPBRVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize, size_t& indexBufferOffset);
+    bool createPBRVertexBuffer(const std::string& filePath, Buffer& buffer, size_t& vertexBufferSize, size_t& indexBufferSize,
+                               size_t& indexBufferOffset);
 
     // shared buffer for compute
     bool createSharedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage, Buffer& buffer);
@@ -170,14 +180,18 @@ public:
     /*
      * Images and textures
      */
-    bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                     VmaMemoryUsage memUsage, Image& image, VkImageCreateFlags flags = 0);
-    bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D, u32 layerCount = 1, u32 mipLevels = 1);
-    bool createTextureSampler(Texture& texture, VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR, VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
+    bool createImage(u32 width, u32 height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memUsage,
+                     Image& image, VkImageCreateFlags flags = 0);
+    bool createImageView(VkFormat format, VkImageAspectFlags aspectFlags, Image& image, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D,
+                         u32 layerCount = 1, u32 mipLevels = 1);
+    bool createTextureSampler(Texture& texture, VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR,
+                              VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
     bool createTextureImage(const std::string& filePath, Texture& texture);
 
-    bool createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount = 1, VkImageCreateFlags createFlags = 0);
-    bool updateTextureImage(Image& image, u32 width, u32 height, VkFormat format, const void* imageData, u32 layerCount = 1, VkImageLayout sourceImageLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+    bool createTextureImageFromData(const void* data, u32 width, u32 height, VkFormat format, Image& image, u32 layerCount = 1,
+                                    VkImageCreateFlags createFlags = 0);
+    bool updateTextureImage(Image& image, u32 width, u32 height, VkFormat format, const void* imageData, u32 layerCount = 1,
+                            VkImageLayout sourceImageLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
     bool createCubeTextureImage(Image& image, const std::string& filePath, u32* width = nullptr, u32* height = nullptr);
 
@@ -185,7 +199,8 @@ public:
     void destroyTexture(Texture& texture);
     void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height, u32 layerCount = 1);
 
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 layerCount = 1, u32 mipLevels = 1);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 layerCount = 1,
+                               u32 mipLevels = 1);
     void transitionImageLayourCmd(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                   VkImageLayout newLayout, u32 layerCount, u32 mipLevels);
 
@@ -205,7 +220,8 @@ public:
 
     bool createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& layout);
 
-    bool allocateDescriptorSets(VkDescriptorPool descriptorPool, const std::vector<VkDescriptorSetLayout>& layouts, std::vector<VkDescriptorSet>& descriptorSets);
+    bool allocateDescriptorSets(VkDescriptorPool descriptorPool, const std::vector<VkDescriptorSetLayout>& layouts,
+                                std::vector<VkDescriptorSet>& descriptorSets);
     void updateDescriptorSets(u32 descriptorWriteCount, const std::vector<VkWriteDescriptorSet>& descriptorWrites);
 
     void destroyDescriptorSetLayout(VkDescriptorSetLayout descriptorLayout);
@@ -221,18 +237,21 @@ public:
      * Graphics pipeline
      */
     bool createPipelineLayout(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout);
-    bool createPipelineLayoutWithConstants(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout, u32 vertexConstSize, u32 fragConstSize);
+    bool createPipelineLayoutWithConstants(const VkDescriptorSetLayout& descriptorLayout, VkPipelineLayout& pipelineLayout,
+                                           u32 vertexConstSize, u32 fragConstSize);
 
-    bool createColorDepthRenderPass(const RenderPassCreateInfo& createInfo, bool useDepth, VkRenderPass& renderPass, VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM);
+    bool createColorDepthRenderPass(const RenderPassCreateInfo& createInfo, bool useDepth, VkRenderPass& renderPass,
+                                    VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM);
 
     bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-                                const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPrimitiveTopology topology, VkPipeline& pipeline,
-                                bool useDepth = true, bool useBlending = true, bool dynamicScissorState = false);
+                                const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkPrimitiveTopology topology,
+                                VkPipeline& pipeline, bool useDepth = true, bool useBlending = true, bool dynamicScissorState = false);
     bool createGraphicsPipeline(u32 width, u32 height, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
                                 const std::vector<std::string>& shaderFilePaths, VkPrimitiveTopology topology, VkPipeline& pipeline,
                                 bool useDepth = true, bool useBlending = true, bool dynamicScissorState = false);
 
-    bool createColorDepthSwapchainFramebuffers(VkRenderPass renderPass, VkImageView depthImageView, std::vector<VkFramebuffer>& swapchainFramebuffers);
+    bool createColorDepthSwapchainFramebuffers(VkRenderPass renderPass, VkImageView depthImageView,
+                                               std::vector<VkFramebuffer>& swapchainFramebuffers);
 
     void destroyRenderPass(VkRenderPass renderPass);
     void destroyPipeline(VkPipeline pipeline);
@@ -243,8 +262,8 @@ public:
      * Compute pipeline
      */
     bool createComputePipeline(VkPipeline& pipeline, VkPipelineLayout pipelineLayout, VkShaderModule computeShader);
-    bool executeComputeShader(VkPipeline computePipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet,
-                              u32 xsize, u32 ysize, u32 zsize);
+    bool executeComputeShader(VkPipeline computePipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet, u32 xsize,
+                              u32 ysize, u32 zsize);
 
     /*
      * Misc./debug
@@ -272,6 +291,18 @@ public:
     {
         return mComputeCommandBuffer;
     }
+
+    /*
+     * High level resource creation. Should be put in a class with a higher abstraction than this.
+     */
+    Texture createTexture(const std::string& fileName);
+    Texture createCubemapTexture(const std::string& fileName);
+    Texture createKTXTexture(const std::string& fileName);
+
+    VkDescriptorSetLayout createDescriptorSetLayout(const DescriptorSetInfo& dsInfo);
+    VkDescriptorPool createDescriptorPool(const DescriptorSetInfo& dsInfo, u32 dSetCount);
+    VkDescriptorSet createDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout dsLayout);
+    void updateDescriptorSet(VkDescriptorSet& ds, const DescriptorSetInfo& dsInfo);
 
 private:
     void init();
@@ -303,6 +334,9 @@ private:
     // 1 command buffer for compute
     VkCommandPool mComputeCommandPool;
     VkCommandBuffer mComputeCommandBuffer;
+
+    // fallback or normal screen render pass
+    RenderPass mScreenRenderPass;
 };
 
 } // namespace Suoh

@@ -4,6 +4,7 @@ add_subdirectory(vma)
 add_subdirectory(Vulkan-Headers)
 add_subdirectory(glm)
 
+set(GLI_TEST_ENABLE OFF CACHE BOOL "")
 add_subdirectory(gli)
 
 # stb
