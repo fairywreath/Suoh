@@ -1,7 +1,5 @@
 project(Suoh VERSION 1.0.0 DESCRIPTION "Suoh engine")
 
-find_package(Vulkan REQUIRED)
-
 add_subdirectory(Core)
 add_subdirectory(Vendor)
 add_subdirectory(RHI)
