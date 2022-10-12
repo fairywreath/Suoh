@@ -13,4 +13,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Pu
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	Core
 	Vulkan::Vulkan
+	VulkanMemoryAllocator
+	glfw
 )
+
+# Precompile vulkan.hpp for fast build/compile times
+target_compile_definitions(${PROJECT_NAME} PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+target_precompile_headers(${PROJECT_NAME} PRIVATE "Private/Vulkan/Headers/vulkan.hpp")

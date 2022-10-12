@@ -8,6 +8,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	RHI
+	glfw
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "")

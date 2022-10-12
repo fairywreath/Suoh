@@ -181,7 +181,7 @@ public:
     {
         T* tmp = mPtr;
         mPtr = other.mPtr;
-        other.mPTr = tmp;
+        other.mPtr = tmp;
     }
 
     [[nodiscard]] T* Get() const noexcept
@@ -285,7 +285,7 @@ protected:
     }
 };
 
-template <class T> class RefCounter : public T
+template <class T> class RefCountResource : public T
 {
 
 public:

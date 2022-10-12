@@ -661,6 +661,7 @@ public:
      * XXX: Maybe have an internal "Job" handled by the RHI internally?
      * Something like:
      *      Receipt SubmitJob(Context context)
+     * Having different contexts for each job type, eg. RenderContet, ComputContext, RayTracingContext would be great
      */
     virtual CommandListHandle CreateCommandList(const CommandListParameters& params = CommandListParameters()) = 0;
     virtual u64 ExecuteCommandLists(ICommandList* const* pCommandLists, size_t numCommandLists,
@@ -673,6 +674,11 @@ public:
 
     virtual void QueueWaitForCommandList(CommandQueue waitQueue, CommandQueue executionQueue, u64 instance) = 0;
     virtual void WaitForIdle() = 0;
+
+    /*
+     * Present.
+     */
+    virtual void Present(ITexture* texture) = 0;
 
     /*
      * Misc.
