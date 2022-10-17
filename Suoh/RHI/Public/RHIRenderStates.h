@@ -59,20 +59,38 @@ struct Color
 
 struct Viewport
 {
-    f32 topLeftX{0};
-    f32 topLeftY{0};
-    f32 width{0};
-    f32 height{0};
-    f32 minDepth{0};
-    f32 maxDepth{0};
+    f32 minX{0};
+    f32 maxX{0};
+    f32 minY{0};
+    f32 maxY{0};
+    f32 minZ{0};
+    f32 maxZ{0};
+
+    bool operator==(const Viewport& b) const
+    {
+        return minX == b.minX && minY == b.minY && minZ == b.minZ && maxX == b.maxX && maxY == b.maxY && maxZ == b.maxZ;
+    }
+    bool operator!=(const Viewport& b) const
+    {
+        return !(*this == b);
+    }
 };
 
 struct Rect
 {
-    i32 left;
-    i32 top;
-    i32 right;
-    i32 bottom;
+    i32 minX{0};
+    i32 maxX{0};
+    i32 minY{0};
+    i32 maxY{0};
+
+    bool operator==(const Rect& b) const
+    {
+        return minX == b.minX && minY == b.minY && maxX == b.maxX && maxY == b.maxY;
+    }
+    bool operator!=(const Rect& b) const
+    {
+        return !(*this == b);
+    }
 };
 
 /*
@@ -132,7 +150,15 @@ enum class Format : u32
     R8_UNORM,
     R8_UINT,
     R8_SNORM,
-    R8_SINT
+    R8_SINT,
+
+    // Depth formats.
+    D32_SFLOAT_S8X24_UINT,
+    D32_SFLOAT,
+    D24_UNORM_S8_UINT,
+    // D32_SFLOAT_S8_UINT,
+
+    COUNT
 };
 
 enum class FormatType : u8
@@ -154,18 +180,24 @@ enum class FormatSupport : u32
     DEPTH_STENCIL = 0x00000010,
     RENDER_TARGET = 0x00000020,
     BLENDABLE = 0x00000040,
+
+    SHADER_LOAD = 0x00000100,
+    SHADER_SAMPLE = 0x00000200,
+    SHADER_ATOMIC = 0x00000400,
+
+    // SSBO/UAV.
+    SHADER_UAV_LOAD = 0x00002000,
+    SHADER_UAV_STORE = 0x00004000,
 };
 
 SUOHRHI_ENUM_CLASS_FLAG_OPERATORS(FormatSupport);
 
-/*
- * Heap.
- */
-enum class HeapType : u8
+enum class AllocationType : u8
 {
-    DEVICE,
+    DEVICE_LOCAL,
     UPLOAD,
     READBACK,
+    CPU_GPU_SHARED,
 };
 
 struct MemoryRequirements
@@ -202,6 +234,7 @@ enum class ResourceStates : u32
 {
     UNKNOWN = 0X00000000,
     COMMON = 0X00000001,
+    // XXX: Change CONSTANT_BUFFER to UNIFORM_BUFFER
     CONSTANT_BUFFER = 0X00000002,
     VERTEX_BUFFER = 0X00000004,
     INDEX_BUFFER = 0X00000008,
@@ -217,11 +250,7 @@ enum class ResourceStates : u32
     RESOLVE_DEST = 0X00002000,
     RESOLVE_SOURCE = 0X00004000,
     PRESENT = 0X00008000,
-    ACCEL_STRUCT_READ = 0X00010000,
-    ACCEL_STRUCT_WRITE = 0X00020000,
-    ACCEL_STRUCT_BUILD_INPUT = 0X00040000,
-    ACCEL_STRUCT_BUILD_BLAS = 0X00080000,
-    SHADING_RATE_SURFACE = 0X00100000,
+    SHADING_RATE_SURFACE = 0x00010000,
 };
 
 SUOHRHI_ENUM_CLASS_FLAG_OPERATORS(ResourceStates);
@@ -350,6 +379,8 @@ enum class ShaderType : u32
     TESSELLATION_EVALUATION = 0X00000020,
 
     COMPUTE = 0X00000100,
+
+    ALL = 0xFFFFFFFF,
 };
 
 SUOHRHI_ENUM_CLASS_FLAG_OPERATORS(ShaderType);
@@ -434,6 +465,8 @@ struct RTBlendState
 
     LogicOp logicOp{LogicOp::NOOP};
     ColorMask renderTargetWriteMask{ColorMask::ALL};
+
+    //[[nodiscard]] bool UsesConstantColor() const;
 };
 
 struct BlendState
@@ -487,6 +520,7 @@ struct DepthStencilState
     bool stencilEnable{false};
     u8 stencilReadMask{0xff};
     u8 stencilWriteMask{0xff};
+    u8 stencilRefValue{0};
 
     StencilOpDesc frontFaceStencil;
     StencilOpDesc backFaceStencil;
@@ -634,7 +668,8 @@ enum class SamplerReductionMode : u8
 {
     NONE,
     MAX,
-    MIN
+    MIN,
+    COMPARISON,
 };
 
 enum class StaticBorderColor : u8
@@ -671,7 +706,7 @@ struct Sampler
     TextureAddressMode addressW{TextureAddressMode::CLAMP};
 
     SamplerFilter filter{SamplerFilter::MIN_MAG_MIP_POINT};
-    SamplerReductionMode mode{SamplerReductionMode::NONE};
+    SamplerReductionMode reductionMode{SamplerReductionMode::NONE};
 
     f32 mipLODBias{0.0f};
     u32 maxAnisotropy{0};
@@ -694,9 +729,20 @@ struct Sampler
 enum class BindingResourceType : u8
 {
     NONE,
-    CONSTANT_BUFFER,
+
+    // Vulkan names, based on vk::DescriptorType
     SAMPLER,
+    SAMPLED_IMAGE,
+    STORAGE_IMAGE,
+    UNIFORM_TEXEL_BUFFER,
+    STORAGE_BUFFER,
+    STORAGE_TEXEL_BUFFER,
+    UNIFORM_BUFFER,
+    UNIFORM_BUFFER_DYNAMIC,
+
     PUSH_CONSTANTS,
+    // XXX: other names, use HLSL uav/src names?
+
     COUNT
 };
 
@@ -715,7 +761,8 @@ struct RenderState
     BlendState blendState;
     DepthStencilState depthStencilState;
     RasterizerState rasterizerState;
-    SinglePassStereoState singlePassStereoState;
+
+    // SinglePassStereoState singlePassStereoState;
 };
 
 PRAGMA_NO_PADDING_END;

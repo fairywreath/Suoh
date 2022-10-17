@@ -5,33 +5,10 @@
 #include "RHIResources.h"
 
 #include <string>
+#include <variant>
 
 namespace SuohRHI
 {
-
-/*
- * Heap.
- * XXX: Might not need this if we are planning to use an internal allocator and
- * not give users external memory management/optimization.
- */
-struct HeapDesc
-{
-    HeapType type;
-    u64 capacity{0};
-    std::string debugName;
-
-    HeapDesc() = default;
-    HeapDesc(HeapType type, u64 capacity, const std::string& debugName) : type(type), capacity(capacity), debugName(debugName){};
-};
-
-class IHeap : public IResource
-{
-
-public:
-    [[nodiscard]] virtual const HeapDesc& GetDesc() = 0;
-};
-
-using HeapHandle = RefCountPtr<IHeap>;
 
 /*
  * Texture.
@@ -41,6 +18,10 @@ struct TextureDesc
     u32 width{1};
     u32 height{1};
     u32 depth{1};
+
+    // XXX: properly implement this from GetFormatInfo
+    bool hasDepth{false};
+    bool hasStencil{false};
 
     u32 mipLevels{1};
     u32 layerCount{0};
@@ -53,13 +34,16 @@ struct TextureDesc
 
     std::string debugName;
 
-    bool isRenderTarGet{false};
+    bool isRenderTarget{false};
 
     Color clearValue;
     bool useClearValue{false};
 
     ResourceStates initialState{ResourceStates::UNKNOWN};
     bool keepInitialState{false};
+
+    // UAV
+    bool isStorage{false};
 };
 
 struct TextureLayer
@@ -68,20 +52,30 @@ struct TextureLayer
     u32 y{0};
     u32 z{0};
 
-    u32 width{1};
-    u32 height{1};
-    u32 depth{1};
+    u32 width{u32(-1)};
+    u32 height{u32(-1)};
+    u32 depth{u32(-1)};
 
     MipLevel mipLevel{0};
     ArrayLayer arrayLayer{0};
 
-    [[nodiscard]] TextureLayer resolve(const TextureDesc& desc) const;
+    [[nodiscard]] TextureLayer Resolve(const TextureDesc& desc) const;
 };
 
 struct TextureSubresourceSet
 {
+    TextureSubresourceSet() = default;
     TextureSubresourceSet(MipLevel baseMipLevel, MipLevel numMipLevels, ArrayLayer baseArrayLayer, ArrayLayer numArrayLayers)
         : baseMipLevel(baseMipLevel), numMipLevels(numMipLevels), baseArrayLayer(baseArrayLayer), numArrayLayers(numArrayLayers){};
+
+    bool operator==(const TextureSubresourceSet& other) const
+    {
+        return baseMipLevel == other.baseMipLevel && numMipLevels == other.numMipLevels && baseArrayLayer == other.baseArrayLayer
+               && numArrayLayers == other.numArrayLayers;
+    }
+
+    [[nodiscard]] TextureSubresourceSet Resolve(const TextureDesc& desc, bool singleMipLevel) const;
+    [[nodiscard]] bool IsEntireTexture(const TextureDesc& desc) const;
 
     static constexpr MipLevel AllMipLevels{1};
     static constexpr ArrayLayer AllArrayLayers{1};
@@ -154,24 +148,30 @@ struct BufferDesc
     bool keepInitialState{false};
 
     CpuAccessMode cpuAccess{CpuAccessMode::NONE};
+
+    // Can have UAVs.
+    bool supportStorageBuffer{false};
+
+    ResourceStates initialState = ResourceStates::COMMON;
 };
 
 struct BufferRange
 {
-    BufferRange(u64 offSet, u64 size) : byteOffSet(offSet), byteSize(size){};
+    BufferRange() = default;
+    BufferRange(u64 offset, u64 size) : byteOffset(offset), byteSize(size){};
 
-    u64 byteOffSet{0};
+    u64 byteOffset{0};
     u64 byteSize{0};
 
-    [[nodiscard]] BufferRange resolve(const BufferDesc& desc) const;
-    [[nodiscard]] constexpr bool isEntireBuffer(const BufferDesc& desc) const
+    [[nodiscard]] BufferRange Resolve(const BufferDesc& desc) const;
+    [[nodiscard]] constexpr bool IsEntireBuffer(const BufferDesc& desc) const
     {
-        return ((byteOffSet == 0) && (byteSize == ~0ull)) || (byteSize == desc.byteSize);
+        return ((byteOffset == 0) && (byteSize == ~0ull)) || (byteSize == desc.byteSize);
     }
 
     constexpr bool operator==(const BufferRange& other)
     {
-        return (byteOffSet == other.byteOffSet) && (byteSize == other.byteSize);
+        return (byteOffset == other.byteOffset) && (byteSize == other.byteSize);
     }
 };
 
@@ -187,6 +187,7 @@ using BufferHandle = RefCountPtr<IBuffer>;
 
 /*
  * Shader
+ * XXX: Need to implemenent shader specializations.
  */
 struct ShaderDesc
 {
@@ -214,7 +215,7 @@ using ShaderHandle = RefCountPtr<IShader>;
 class IShaderLibrary : public IResource
 {
 public:
-    virtual ShaderHandle GetShader(const std::string& entryName, ShaderType shaderType) = 0;
+    virtual ShaderHandle GetShader(const char* entryName, ShaderType shaderType) = 0;
     virtual void GetBytecode(const void** ppByteCode, size_t* pSize) const = 0;
 };
 
@@ -243,7 +244,7 @@ struct FramebufferAttachment
     Format format{Format::UNKNOWN};
     bool isReadOnly{false};
 
-    [[nodiscard]] bool valid() const
+    [[nodiscard]] bool Valid() const
     {
         return (texture != nullptr);
     }
@@ -253,6 +254,8 @@ struct FramebufferDesc
 {
     static_vector<FramebufferAttachment, MAX_RENDER_TARGETS> colorAttachments;
     FramebufferAttachment depthAttachment;
+
+    // XXX: Implement shading rate attachment
 };
 
 struct FramebufferInfo
@@ -290,20 +293,35 @@ struct BindingLayoutItem
 };
 
 static constexpr auto MAX_BINDINGS_PER_LAYOUT = 128;
+static constexpr auto C_MAX_BINDING_LAYOUTS = 4;
+static constexpr auto C_MAX_VOLATILE_CONSTANT_BUFFERS = 32;
 
 using BindingLayoutItemArray = static_vector<BindingLayoutItem, MAX_BINDINGS_PER_LAYOUT>;
 
+template <typename T> using BindingVector = static_vector<T, C_MAX_BINDING_LAYOUTS>;
+
 struct BindingLayoutDesc
 {
-    ShaderVisibility visibility{ShaderVisibility::NONE};
+    // ShaderVisibility visibility{ShaderVisibility::NONE};
+    ShaderType visibility{ShaderType::NONE};
+
     u32 registerSpace{0};
     BindingLayoutItemArray bindings;
+
+    // XXX: Need custom vulkan binding offsets for HLSL -> SPIRV compilation.
+    // VulkanBindingOffsets....
 };
 
+/*
+ * Bindless: binding slot/point is set automatically inside RHI.
+ */
 struct BindlessLayoutDesc
 {
     ShaderType visibility{ShaderType::NONE};
-    u32 firstSlot{0};
+
+    // slot starts from 0
+    // u32 firstSlot{0};
+
     u32 maxCapacity{0};
     static_vector<BindingLayoutItem, 16> registerSpaces;
 };
@@ -330,8 +348,20 @@ struct BindingSetItem
 
     BindingResourceType type : 8;
     TextureDimension dimension : 8;
-    // Format format : 32;
+    Format format : 32;
     u8 unused : 8;
+
+    // std::variant<TextureSubresourceSet, BufferRange, u64[2]> rawData;
+    union {
+        TextureSubresourceSet textureSubresources;
+        BufferRange bufferRange;
+        u64 rawData[2];
+    };
+
+    BindingSetItem()
+    {
+    }
+    // XXX: Constructors for each binding item type.
 };
 
 using BindingSetItemArray = static_vector<BindingSetItem, MAX_BINDINGS_PER_LAYOUT>;
@@ -351,6 +381,9 @@ public:
 using BindingSetHandle = RefCountPtr<IBindingSet>;
 using BindingSetVector = static_vector<IBindingSet*, MAX_BINDINGS_PER_LAYOUT>;
 
+/*
+ * For "bindless" layour desc.
+ */
 class IDescriptorTable : public IBindingSet
 {
 public:
@@ -431,15 +464,24 @@ struct VertexBufferBinding
 {
     IBuffer* buffer{nullptr};
     u32 slot;
-    u32 offSet;
+    u32 offset;
+
+    bool operator==(const VertexBufferBinding& b) const
+    {
+        return buffer == b.buffer && slot == b.slot && offset == b.offset;
+    }
 };
 
 struct IndexBufferBinding
 {
-
     IBuffer* buffer{nullptr};
     Format format;
-    u32 offSet;
+    u32 offset;
+
+    bool operator==(const IndexBufferBinding& b) const
+    {
+        return buffer == b.buffer && format == b.format && offset == b.offset;
+    }
 };
 
 static constexpr auto MAX_VERTEX_ATTRIBUTES = 16;
@@ -487,7 +529,9 @@ enum class RHIFeature : u8
 enum class CommandQueue : u8
 {
     GRAPHICS = 0,
-    COMPUTE = 1,
+    PRESENT = 1,
+    COMPUTE = 2,
+    COUNT,
 };
 
 class IDevice;
@@ -506,9 +550,14 @@ public:
     virtual IDevice* GetDevice() = 0;
     virtual const CommandListParameters& GetDesc() const = 0;
 
+    virtual Object GetNativeObject(ObjectType type) = 0;
+
+    virtual void Begin() = 0;
+    virtual void End() = 0;
+
     virtual void ClearState() = 0;
     virtual void ClearTexture(ITexture* texture, TextureSubresourceSet subresources, const Color& clearColor) = 0;
-    virtual void ClearTexture(ITexture* texture, TextureSubresourceSet subresources, u32 clearColor) = 0;
+    virtual void ClearTextureUint(ITexture* texture, TextureSubresourceSet subresources, u32 clearColor) = 0;
     virtual void ClearDepthStencilTexture(ITexture* texture, TextureSubresourceSet subresources, bool clearDepth, float depth,
                                           bool clearStencil, u8 stencil)
         = 0;
@@ -562,6 +611,9 @@ public:
     virtual void SetPermanentTextureState(ITexture* texture, ResourceStates stateBits) = 0;
     virtual void SetPermanentBufferState(IBuffer* buffer, ResourceStates stateBits) = 0;
 
+    virtual void SetEnableSSBOBarriersForTexture(ITexture* texture, bool enableBarriers) = 0;
+    virtual void SetEnableSSBOBarriersForBuffer(IBuffer* buffer, bool enableBarriers) = 0;
+
     virtual void CommitBarriers() = 0;
 
     virtual ResourceStates GetTextureSubresourceState(ITexture* texture, ArrayLayer arrayLayer, MipLevel mipLevel) = 0;
@@ -579,29 +631,17 @@ public:
     virtual GraphicsAPI GetGraphicsAPI() const = 0;
 
     /*
-     * Heap memory.
-     */
-    virtual HeapHandle CreateHeap(const HeapDesc& desc) = 0;
-
-    /*
      * Buffers.
      */
     virtual BufferHandle CreateBuffer(const BufferDesc& desc) = 0;
+    virtual BufferHandle CreateHandleForNativeBuffer(ObjectType objectType, Object buffer, const BufferDesc& desc) = 0;
     virtual void* MapBuffer(IBuffer* buffer, CpuAccessMode access) = 0;
     virtual void UnmapBuffer(IBuffer* buffer) = 0;
-    virtual MemoryRequirements GetBufferMemoryRequirements(IBuffer* buffer) = 0;
-    /*
-     * XXX: Probably would not need this, will use an internal allocator inside the RHI.
-     */
-    virtual bool BindBufferMemory(IBuffer* buffer, IHeap* heap, u64 offset) = 0;
-    virtual BufferHandle CreateHandleForNativeBuffer(ObjectType objectType, Object buffer, const BufferDesc& desc) = 0;
 
     /*
      * Texture/images.
      */
     virtual TextureHandle CreateTexture(const TextureDesc& desc) = 0;
-    virtual MemoryRequirements GetTextureMemoryRequireents(ITexture* texture) = 0;
-    virtual bool BindTextureMemory(ITexture* texture, IHeap* heap, u64 offset) = 0;
     virtual TextureHandle CreateHandleForNativeTexture(ObjectType objectType, Object texture, const TextureDesc& desc) = 0;
 
     virtual StagingTextureHandle CreateStagingTexture(const TextureDesc& desc, CpuAccessMode access) = 0;
@@ -639,7 +679,7 @@ public:
      * Graphics Pipeline.
      */
     virtual FramebufferHandle CreateFramebuffer(const FramebufferDesc& desc) = 0;
-    virtual GraphicsPipelineHandle CreateGraphicsPipeline(const GraphicsPipelineDesc& desc) = 0;
+    virtual GraphicsPipelineHandle CreateGraphicsPipeline(const GraphicsPipelineDesc& desc, IFramebuffer* framebuffer) = 0;
 
     /*
      * Compute.
@@ -683,7 +723,9 @@ public:
     /*
      * Misc.
      */
-    virtual void RunGarbageCollection() = 0;
+
+    // Cleanup: for now this is only used to retire unsued command buffers.
+    virtual void Cleanup() = 0;
 
     virtual Object GetNativeQueue(ObjectType objectType, CommandQueue queue) = 0;
 
@@ -693,4 +735,123 @@ public:
 
 using DeviceHandle = RefCountPtr<IDevice>;
 
+template <class T> void hash_combine(size_t& seed, const T& v)
+{
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 } // namespace SuohRHI
+
+/*
+ * Custom hash functions.
+ */
+namespace std
+{
+
+template <typename T> struct hash<SuohRHI::RefCountPtr<T>>
+{
+    size_t operator()(SuohRHI::RefCountPtr<T> const& s) const noexcept
+    {
+        std::hash<T*> hash;
+        return hash(s.Get());
+    }
+};
+
+template <> struct hash<SuohRHI::TextureSubresourceSet>
+{
+    size_t operator()(SuohRHI::TextureSubresourceSet const& s) const noexcept
+    {
+        size_t hash = 0;
+        SuohRHI::hash_combine(hash, s.baseMipLevel);
+        SuohRHI::hash_combine(hash, s.numMipLevels);
+        SuohRHI::hash_combine(hash, s.baseArrayLayer);
+        SuohRHI::hash_combine(hash, s.numArrayLayers);
+        return hash;
+    }
+};
+
+template <> struct hash<SuohRHI::BufferRange>
+{
+    size_t operator()(SuohRHI::BufferRange const& s) const noexcept
+    {
+        size_t hash = 0;
+        SuohRHI::hash_combine(hash, s.byteOffset);
+        SuohRHI::hash_combine(hash, s.byteSize);
+        return hash;
+    }
+};
+
+template <> struct hash<SuohRHI::BindingSetItem>
+{
+    size_t operator()(SuohRHI::BindingSetItem const& s) const noexcept
+    {
+        size_t value = 0;
+        SuohRHI::hash_combine(value, s.resourceHandle);
+        SuohRHI::hash_combine(value, s.slot);
+        SuohRHI::hash_combine(value, s.type);
+        SuohRHI::hash_combine(value, s.dimension);
+        SuohRHI::hash_combine(value, s.format);
+        // SuohRHI::hash_combine(value, s.rawData[0]);
+        // SuohRHI::hash_combine(value, s.rawData[1]);
+        return value;
+    }
+};
+
+template <> struct hash<SuohRHI::BindingSetDesc>
+{
+    size_t operator()(SuohRHI::BindingSetDesc const& s) const noexcept
+    {
+        size_t value = 0;
+        for (const auto& item : s.bindings)
+            hash_combine(value, item);
+        return value;
+    }
+};
+
+template <> struct hash<SuohRHI::FramebufferInfo>
+{
+    size_t operator()(SuohRHI::FramebufferInfo const& s) const noexcept
+    {
+        size_t hash = 0;
+        for (auto format : s.colorFormats)
+            SuohRHI::hash_combine(hash, format);
+        SuohRHI::hash_combine(hash, s.depthFormat);
+        SuohRHI::hash_combine(hash, s.width);
+        SuohRHI::hash_combine(hash, s.height);
+        SuohRHI::hash_combine(hash, s.sampleCount);
+        SuohRHI::hash_combine(hash, s.sampleQuality);
+        return hash;
+    }
+};
+
+template <> struct hash<SuohRHI::RTBlendState>
+{
+    size_t operator()(SuohRHI::RTBlendState const& s) const noexcept
+    {
+        size_t hash = 0;
+        SuohRHI::hash_combine(hash, s.blendEnable);
+        SuohRHI::hash_combine(hash, s.srcBlend);
+        SuohRHI::hash_combine(hash, s.destBlend);
+        SuohRHI::hash_combine(hash, s.blendOp);
+        SuohRHI::hash_combine(hash, s.srcBlendAlpha);
+        SuohRHI::hash_combine(hash, s.destBlendAlpha);
+        SuohRHI::hash_combine(hash, s.blendOpAlpha);
+        SuohRHI::hash_combine(hash, s.renderTargetWriteMask);
+        return hash;
+    }
+};
+
+template <> struct hash<SuohRHI::BlendState>
+{
+    size_t operator()(SuohRHI::BlendState const& s) const noexcept
+    {
+        size_t hash = 0;
+        SuohRHI::hash_combine(hash, s.alphaToCoverageEnable);
+        for (const auto& target : s.renderTargets)
+            SuohRHI::hash_combine(hash, target);
+        return hash;
+    }
+};
+
+} // namespace std

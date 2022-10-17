@@ -17,7 +17,7 @@ public:
     NON_COPYABLE(VulkanInstance);
     NON_MOVEABLE(VulkanInstance);
 
-    vk::Instance GetVkInstance() const;
+    [[nodiscard]] vk::Instance GetVkInstance() const;
 
 private:
     void InitInstance();

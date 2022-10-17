@@ -4,7 +4,8 @@
 
 #include <vector>
 
-#include <vulkan/vulkan.h>
+//#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+//#include "Vulkan/Headers/vulkan.hpp"
 
 namespace SuohRHI
 {

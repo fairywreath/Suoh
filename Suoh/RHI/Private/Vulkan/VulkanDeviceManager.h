@@ -35,6 +35,10 @@ public:
     NON_MOVEABLE(VulkanDeviceManager);
 
     [[nodiscard]] VulkanDeviceContext CreateDevice(const DeviceDesc& desc);
+    [[nodiscard]] vk::SurfaceKHR GetVkSurfaceKHR() const
+    {
+        return m_Surface;
+    }
 
 private:
     void GetPhysicalDevices();
@@ -54,7 +58,7 @@ private:
     bool CheckDeviceExtensionSupport(vk::PhysicalDevice device, const DeviceDesc& desc) const;
 
 private:
-    VulkanInstance& m_Instance;
+    const VulkanInstance& m_Instance;
 
     u32 m_PhysicalDeviceCount{0};
     std::vector<vk::PhysicalDevice> m_PhysicalDevices;
