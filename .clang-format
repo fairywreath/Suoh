@@ -9,4 +9,4 @@ ReferenceAlignment: Pointer
 
 BreakBeforeBinaryOperators: All
 
-ColumnLimit: 140
+ColumnLimit: 100

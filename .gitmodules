@@ -7,3 +7,6 @@
 [submodule "Suoh/Vendor/glfw"]
 	path = Suoh/Vendor/glfw
 	url = git@github.com:glfw/glfw.git
+[submodule "Suoh/Vendor/glslang"]
+	path = Suoh/Vendor/glslang
+	url = git@github.com:KhronosGroup/glslang.git

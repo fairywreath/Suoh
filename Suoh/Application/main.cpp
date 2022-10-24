@@ -1,14 +1,11 @@
 #include <iostream>
 
-#include <Logger.h>
-
-#include "VulkanRHI.h"
-
 #include <GLFW/glfw3.h>
 
-/*
- *Simple Test App with a window.
- */
+#include <RenderCore/RenderCore.h>
+#include <RenderCore/Vulkan/VulkanDevice.h>
+
+#include <Logger.h>
 
 static constexpr auto FRAMEBUFFER_WIDTH = 1280;
 static constexpr auto FRAMEBUFFER_HEIGHT = 720;
@@ -46,10 +43,11 @@ void WindowLoop()
 {
     while (!glfwWindowShouldClose(g_Window))
     {
-        // glfwSwapBuffers(g_Window);
         glfwPollEvents();
     }
 }
+
+using namespace RenderCore;
 
 int main()
 {
@@ -58,10 +56,21 @@ int main()
 
     WindowInit();
 
-    SuohRHI::Vulkan::DeviceDesc deviceDesc;
+    RenderCore::DeviceDesc deviceDesc;
+    deviceDesc.framebufferWidth = FRAMEBUFFER_WIDTH;
+    deviceDesc.framebufferHeight = FRAMEBUFFER_HEIGHT;
     deviceDesc.glfwWindowPtr = g_Window;
 
-    auto deviceHandle = SuohRHI::Vulkan::CreateDevice(deviceDesc);
+    auto renderDevice = RenderCore::CreateVulkanDevice(deviceDesc);
+
+    {
+        auto buf1 = renderDevice->CreateBuffer({
+            .size = 1024,
+            .usage = BufferUsage::STORAGE_BUFFER,
+        });
+
+        auto cmd = renderDevice->CreateCommandList({});
+    }
 
     WindowLoop();
 
