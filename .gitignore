@@ -1,6 +1,7 @@
 # Build output files
 /build
 /out
+x64-Debug/
 
 # Resources/data files
 /Resources
