@@ -7,6 +7,11 @@
 
 #include <Logger.h>
 
+#include <RenderDescription/Material.h>
+#include <RenderDescription/Mesh.h>
+#include <RenderDescription/Scene.h>
+#include <RenderDescription/Utils.h>
+
 static constexpr auto FRAMEBUFFER_WIDTH = 1280;
 static constexpr auto FRAMEBUFFER_HEIGHT = 720;
 
@@ -65,10 +70,12 @@ int main()
     auto renderDevice = CreateVulkanDevice(deviceDesc);
 
     auto vs = renderDevice->CreateShader({
-        .fileName = "../../../Shaders/SimpleVertex.vert",
+        .fileName = "../../../Shaders/SimpleVertex.vert.spv",
+        .needsCompilation = false,
     });
     auto fs = renderDevice->CreateShader({
-        .fileName = "../../../Shaders/SimpleFragment.frag",
+        .fileName = "../../../Shaders/SimpleFragment.frag.spv",
+        .needsCompilation = false,
     });
 
     std::vector<vec3> positions = {
@@ -192,6 +199,8 @@ int main()
     renderDevice->WaitGraphicsSubmissionSemaphore();
 
     WindowDestroy();
+
+    LOG_INFO(u32(-1));
 
     return 0;
 }

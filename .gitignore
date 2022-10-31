@@ -6,6 +6,9 @@ x64-Debug/
 # Resources/data files
 /Resources
 
+# Archived
+Suoh/Archive/
+
 # vs/vscode cache
 /.vs
 CMakeSettings.json
