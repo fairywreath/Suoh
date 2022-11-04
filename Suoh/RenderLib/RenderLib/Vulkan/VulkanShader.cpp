@@ -241,7 +241,9 @@ ShaderHandle VulkanDevice::CreateShader(const ShaderDesc& _desc)
     VK_CHECK_RETURN_NULL(
         m_Context.device.createShaderModule(&shaderInfo, nullptr, &handle->shaderModule));
 
-    handle->desc = desc;
+    // XXX: Clear out binary?
+    desc.binary.clear();
+    handle->desc = std::move(desc);
     return handle;
 }
 

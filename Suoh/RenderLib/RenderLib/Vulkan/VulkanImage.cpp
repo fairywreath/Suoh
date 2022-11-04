@@ -12,12 +12,10 @@ Image::~Image()
 {
     if (managed)
     {
-        if (sampler)
-            m_Context.device.destroySampler(sampler);
         if (imageView)
             m_Context.device.destroyImageView(imageView);
         if (image)
-            m_Context.device.destroyImage(image);
+            vmaDestroyImage(m_Context.allocator, image, allocation);
     }
 }
 
@@ -87,7 +85,8 @@ ImageHandle VulkanDevice::CreateImage(const ImageDesc& desc)
               .setInitialLayout(vk::ImageLayout::eUndefined);
 
     VmaAllocationCreateInfo allocInfo{};
-    allocInfo.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    // allocInfo.flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
     auto res = vmaCreateImage(m_Context.allocator, reinterpret_cast<VkImageCreateInfo*>(&imageInfo),
                               &allocInfo, reinterpret_cast<VkImage*>(&image->image),
@@ -129,6 +128,7 @@ SamplerHandle VulkanDevice::CreateSampler(const SamplerDesc& desc)
     VK_CHECK_RETURN_NULL(
         m_Context.device.createSampler(&sampler->samplerInfo, nullptr, &sampler->sampler));
 
+    sampler->desc = desc;
     return sampler;
 }
 

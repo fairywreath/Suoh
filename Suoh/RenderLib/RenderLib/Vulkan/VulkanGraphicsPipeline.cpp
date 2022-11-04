@@ -49,8 +49,8 @@ RenderPassHandle VulkanDevice::CreateRenderPass(const RenderPassDesc& desc)
               .setSamples(vk::SampleCountFlagBits::e1)
               .setLoadOp(offscreenInternal ? vk::AttachmentLoadOp::eLoad
                                            : (desc.clearColor ? vk::AttachmentLoadOp::eClear
-                                                              : vk::AttachmentLoadOp::eDontCare))
-              .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+                                                              : vk::AttachmentLoadOp::eLoad))
+              .setStoreOp(vk::AttachmentStoreOp::eStore)
               .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
               .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
               .setInitialLayout(first ? vk::ImageLayout::eUndefined
@@ -69,18 +69,19 @@ RenderPassHandle VulkanDevice::CreateRenderPass(const RenderPassDesc& desc)
               .setSamples(vk::SampleCountFlagBits::e1)
               .setLoadOp(offscreenInternal ? vk::AttachmentLoadOp::eLoad
                                            : (desc.clearDepth ? vk::AttachmentLoadOp::eClear
-                                                              : vk::AttachmentLoadOp::eDontCare))
-              .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+                                                              : vk::AttachmentLoadOp::eLoad))
+              .setStoreOp(vk::AttachmentStoreOp::eStore)
               .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
               .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-              .setInitialLayout(first ? vk::ImageLayout::eUndefined
-                                      : (offscreenInternal
-                                             ? vk::ImageLayout::eShaderReadOnlyOptimal
-                                             : vk::ImageLayout::eDepthAttachmentOptimal))
-              .setFinalLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+              .setInitialLayout(desc.clearDepth
+                                    ? vk::ImageLayout::eUndefined
+                                    : (offscreenInternal
+                                           ? vk::ImageLayout::eShaderReadOnlyOptimal
+                                           : vk::ImageLayout::eDepthStencilAttachmentOptimal))
+              .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     auto depthAttachmentRef = vk::AttachmentReference().setAttachment(1).setLayout(
-        vk::ImageLayout::eDepthAttachmentOptimal);
+        vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     std::vector<vk::SubpassDependency> subpassDependencies
         = {vk::SubpassDependency()
@@ -112,8 +113,8 @@ RenderPassHandle VulkanDevice::CreateRenderPass(const RenderPassDesc& desc)
                   .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
         subpassDependencies[1]
             = vk::SubpassDependency()
-                  .setSrcSubpass(VK_SUBPASS_EXTERNAL)
-                  .setDstSubpass(0)
+                  .setSrcSubpass(0)
+                  .setDstSubpass(VK_SUBPASS_EXTERNAL)
                   .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
                   .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
                   .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
@@ -145,6 +146,7 @@ RenderPassHandle VulkanDevice::CreateRenderPass(const RenderPassDesc& desc)
     VK_CHECK_RETURN_NULL(
         m_Context.device.createRenderPass(&renderPassInfo, nullptr, &renderPass->renderPass));
 
+    renderPass->desc = desc;
     return renderPass;
 }
 
@@ -162,14 +164,14 @@ FramebufferHandle VulkanDevice::CreateFramebuffer(const FramebufferDesc& desc)
 
     const auto framebufferInfo = vk::FramebufferCreateInfo()
                                      .setRenderPass(desc.renderPass->renderPass)
-                                     .setAttachmentCount((u32)attachments.size())
-                                     .setPAttachments(attachments.data())
+                                     .setAttachments(attachments)
                                      .setWidth(desc.width)
                                      .setHeight(desc.height)
                                      .setLayers(1);
 
     VK_CHECK_RETURN_NULL(
         m_Context.device.createFramebuffer(&framebufferInfo, nullptr, &framebuffer->framebuffer));
+    framebuffer->desc = desc;
 
     return framebuffer;
 }
@@ -243,7 +245,7 @@ GraphicsPipelineHandle VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
                               .setWidth((float)desc.width)
                               .setHeight((float)desc.height)
                               .setMinDepth(0.0f)
-                              .setMaxDepth(0.0f);
+                              .setMaxDepth(1.0f);
 
     const auto scissor = vk::Rect2D().setOffset({0, 0}).setExtent({desc.width, desc.height});
 
@@ -318,6 +320,7 @@ GraphicsPipelineHandle VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
 
     VK_CHECK_RETURN_NULL(m_Context.device.createGraphicsPipelines(nullptr, 1, &pipelineInfo,
                                                                   nullptr, &handle->pipeline));
+    handle->desc = desc;
 
     return handle;
 }

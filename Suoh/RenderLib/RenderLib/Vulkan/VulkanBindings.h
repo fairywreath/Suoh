@@ -91,6 +91,7 @@ struct DescriptorSetDesc
     {
     }
 
+    // XXX: Need to hold a strong reference here?
     DescriptorLayoutHandle layout;
 };
 

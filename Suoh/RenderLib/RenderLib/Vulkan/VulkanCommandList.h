@@ -36,6 +36,18 @@ struct GraphicsState
     BufferHandle indirectBuffer;
 };
 
+struct RenderPassState
+{
+    RenderPassHandle renderPass;
+    FramebufferHandle frameBuffer;
+
+    bool clearColor{false};
+    vk::ClearValue clearColorValue;
+
+    bool clearDepth{false};
+    vk::ClearValue clearDepthValue;
+};
+
 struct DrawArguments
 {
     // Vertex or index count.
@@ -70,6 +82,12 @@ public:
     void DrawIndexed(const DrawArguments& args);
     void DrawIndirect(u32 offset, u32 drawCount);
 
+    void TransitionImageLayout(Image* image, vk::ImageLayout newLayout);
+
+    // XXX: Maybe no need to expose these?
+    void BeginRenderPass(RenderPassState rpState);
+    void EndRenderPass();
+
     const vk::CommandBuffer& GetCommandBuffer() const
     {
         return m_CommandBuffer;
@@ -79,10 +97,6 @@ public:
 
 private:
     void InitCommandBuffer();
-
-    void EndRenderPass();
-
-    void TransitionImageLayout(Image* image, vk::ImageLayout newLayout);
 
 private:
     const VulkanContext& m_Context;

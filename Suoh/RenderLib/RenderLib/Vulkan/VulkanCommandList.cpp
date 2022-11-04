@@ -39,7 +39,7 @@ void CommandList::Begin()
 
 void CommandList::End()
 {
-    EndRenderPass();
+    // EndRenderPass();
     m_CommandBuffer.end();
 }
 
@@ -98,16 +98,23 @@ void CommandList::WriteImage(Image* image, const void* data)
 
 void CommandList::SetGraphicsState(const GraphicsState& graphicsState)
 {
-    // XXX: Have these as graphics state params/fields.
+    const auto& renderPassDesc = graphicsState.renderPass->desc;
+    const auto& framebufferDesc = graphicsState.frameBuffer->desc;
 
-    const vk::ClearValue clearValues[2] = {
-        vk::ClearValue().setColor(vk::ClearColorValue().setFloat32({1.0f, 1.0f, 1.0f, 1.0f})),
-        vk::ClearValue().setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0)),
-    };
+    std::vector<vk::ClearValue> clearValues;
+    if (renderPassDesc.clearColor)
+    {
+        clearValues.push_back(
+            vk::ClearValue().setColor(vk::ClearColorValue().setFloat32({0.0f, 0.0f, 0.0f, 1.0f})));
+    }
+    if (renderPassDesc.clearDepth)
+    {
+        clearValues.push_back(vk::ClearValue().setDepthStencil({1.0f, 0}));
+    }
 
     const auto rect = vk::Rect2D().setOffset({0, 0}).setExtent({
-        graphicsState.frameBuffer->desc.width,
-        graphicsState.frameBuffer->desc.height,
+        framebufferDesc.width,
+        framebufferDesc.height,
     });
 
     const auto renderPassInfo = vk::RenderPassBeginInfo()
@@ -153,6 +160,7 @@ void CommandList::InitCommandBuffer()
     if (desc.queueType == QueueType::GRAPHICS)
         queueFamily = m_pDevice->GetGraphicsFamily();
     else if (desc.queueType == QueueType::COMPUTE)
+
         queueFamily = m_pDevice->GetComputeFamily();
     else
     {
@@ -174,13 +182,35 @@ void CommandList::InitCommandBuffer()
     VK_CHECK_RETURN(m_Context.device.allocateCommandBuffers(&allocInfo, &m_CommandBuffer));
 }
 
+void CommandList::BeginRenderPass(RenderPassState rpState)
+{
+    std::vector<vk::ClearValue> clearValues;
+    if (rpState.clearColor)
+        clearValues.push_back(rpState.clearColorValue);
+    if (rpState.clearDepth)
+        clearValues.push_back(rpState.clearDepthValue);
+
+    const auto rect = vk::Rect2D().setOffset({0, 0}).setExtent({
+        rpState.frameBuffer->desc.width,
+        rpState.frameBuffer->desc.height,
+    });
+
+    const auto renderPassInfo = vk::RenderPassBeginInfo()
+                                    .setRenderPass(rpState.renderPass->renderPass)
+                                    .setFramebuffer(rpState.frameBuffer->framebuffer)
+                                    .setRenderArea(rect)
+                                    .setClearValues(clearValues);
+
+    m_CommandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+}
+
 void CommandList::EndRenderPass()
 {
-    if (m_CurrentGraphicsState.frameBuffer)
-    {
-        m_CommandBuffer.endRenderPass();
-        m_CurrentGraphicsState = {};
-    }
+    // if (m_CurrentGraphicsState.frameBuffer)
+    //{
+    m_CommandBuffer.endRenderPass();
+    // m_CurrentGraphicsState = {};
+    //}
 }
 
 void CommandList::TransitionImageLayout(Image* image, vk::ImageLayout newLayout)
@@ -227,7 +257,7 @@ void CommandList::TransitionImageLayout(Image* image, vk::ImageLayout newLayout)
         && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
     {
         barrier.srcAccessMask = vk::AccessFlagBits(0);
-        barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
         sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
         destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
@@ -235,19 +265,19 @@ void CommandList::TransitionImageLayout(Image* image, vk::ImageLayout newLayout)
     else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eGeneral)
     {
         barrier.srcAccessMask = vk::AccessFlagBits(0);
-        barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
         sourceStage = vk::PipelineStageFlagBits::eTransfer;
         destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
     }
-    if (oldLayout == vk::ImageLayout::eUndefined
-        && newLayout == vk::ImageLayout::eTransferDstOptimal)
+    else if (oldLayout == vk::ImageLayout::eUndefined
+             && newLayout == vk::ImageLayout::eTransferDstOptimal)
     {
         barrier.srcAccessMask = vk::AccessFlagBits(0);
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 
         sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
-        sourceStage = vk::PipelineStageFlagBits::eTransfer;
+        destinationStage = vk::PipelineStageFlagBits::eTransfer;
     }
     else if (oldLayout == vk::ImageLayout::eShaderReadOnlyOptimal
              && newLayout == vk::ImageLayout::eTransferDstOptimal)

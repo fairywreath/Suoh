@@ -30,13 +30,14 @@ inline vk::DescriptorPoolSize MakeVkDescriptorPoolSize(vk::DescriptorType type, 
 inline vk::WriteDescriptorSet MakeVkWriteDescriptorSet(vk::DescriptorSet set,
                                                        const vk::DescriptorBufferInfo* bufferInfo,
                                                        const vk::DescriptorImageInfo* imageInfo,
-                                                       u32 binding, vk::DescriptorType type)
+                                                       u32 binding, vk::DescriptorType type,
+                                                       u32 count = 1)
 {
     return vk::WriteDescriptorSet()
         .setDstSet(set)
         .setDstBinding(binding)
         .setDstArrayElement(0)
-        .setDescriptorCount(1)
+        .setDescriptorCount(count)
         .setDescriptorType(type)
         .setPBufferInfo(bufferInfo)
         .setPImageInfo(imageInfo);
@@ -75,8 +76,6 @@ DescriptorLayoutHandle VulkanDevice::CreateDescriptorLayout(const DescriptorLayo
         iad.descriptorItem.bindingSlot = bindingIndex;
         bindings.push_back(MakeVkBinding(bindingIndex++, vk::DescriptorType::eCombinedImageSampler,
                                          iad.descriptorItem.shaderStageFlags, iad.images.size()));
-        // bindings.push_back(MakeVkBinding(bindingIndex++, iab.descriptorItem.type,
-        //                                 iab.descriptorItem.shaderStageFlags, iab.images.size()));
     }
 
     if (bindings.empty())
@@ -178,7 +177,7 @@ void DescriptorSet::UpdateDescriptorSets()
     std::vector<vk::WriteDescriptorSet> descriptorWrites;
 
     const size_t bufferDescriptorsCount = desc.layout->desc.bufferDescriptors.size();
-    const size_t imageDescriptorsCount = desc.layout->desc.imageArrayDescriptors.size();
+    const size_t imageDescriptorsCount = desc.layout->desc.imageDescriptors.size();
     const size_t imageArrayDescriptorsCount = desc.layout->desc.imageArrayDescriptors.size();
 
     std::vector<vk::DescriptorBufferInfo> bufferDescriptors(bufferDescriptorsCount);
@@ -226,6 +225,8 @@ void DescriptorSet::UpdateDescriptorSets()
         for (const auto& image : images)
         {
             assert(image->currentLayout == vk::ImageLayout::eShaderReadOnlyOptimal);
+            assert((void*)image->sampler != nullptr);
+            assert((void*)image->imageView != nullptr);
 
             const auto imageInfo = vk::DescriptorImageInfo()
                                        .setSampler(image->sampler)
@@ -238,7 +239,7 @@ void DescriptorSet::UpdateDescriptorSets()
         descriptorWrites.push_back(MakeVkWriteDescriptorSet(
             descriptorSet, nullptr, imageArrayDescriptors.data() + iaOffset,
             desc.layout->desc.imageArrayDescriptors[i].descriptorItem.bindingSlot,
-            vk::DescriptorType::eCombinedImageSampler));
+            vk::DescriptorType::eCombinedImageSampler, imageArrayDescriptors.size()));
 
         iaOffset += static_cast<u32>(images.size());
     }

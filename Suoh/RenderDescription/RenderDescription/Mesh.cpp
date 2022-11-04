@@ -41,22 +41,18 @@ void RecalculateBoundingBoxes(MeshData& meshData)
     {
         const auto numIndices = mesh.GetLODIndicesCount(0);
 
-        vec3 minVertex(std::numeric_limits<float>::max());
-        vec3 maxVertex(std::numeric_limits<float>::lowest());
+        vec3 vmin(std::numeric_limits<float>::max());
+        vec3 vmax(std::numeric_limits<float>::lowest());
 
         for (auto i = 0; i != numIndices; i++)
         {
-            auto vertexOffset = meshData.indexData[mesh.indexOffset + i] + mesh.vertexOffset;
-
-            const float* currentVertex = &meshData.vertexData[vertexOffset * MAX_STREAMS];
-
-            minVertex
-                = glm::min(minVertex, vec3(currentVertex[0], currentVertex[1], currentVertex[2]));
-            maxVertex
-                = glm::max(maxVertex, vec3(currentVertex[0], currentVertex[1], currentVertex[2]));
+            auto vtxOffset = meshData.indexData[mesh.indexOffset + i] + mesh.vertexOffset;
+            const float* vf = &meshData.vertexData[vtxOffset * MAX_STREAMS];
+            vmin = glm::min(vmin, vec3(vf[0], vf[1], vf[2]));
+            vmax = glm::max(vmax, vec3(vf[0], vf[1], vf[2]));
         }
 
-        meshData.boundingBoxes.emplace_back(minVertex, maxVertex);
+        meshData.boundingBoxes.emplace_back(vmin, vmax);
     }
 }
 

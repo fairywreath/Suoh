@@ -11,7 +11,7 @@ Suoh/Archive/
 
 # vs/vscode cache
 /.vs
-CMakeSettings.json
+# CMakeSettings.json
 
 # Prerequisites
 *.d

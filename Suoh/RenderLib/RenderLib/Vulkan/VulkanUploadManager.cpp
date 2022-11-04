@@ -13,14 +13,20 @@ UploadManager::~UploadManager()
     if (m_CurrentChunk)
     {
         if (m_CurrentChunk->mappedMemory)
+        {
             m_pDevice->UnmapBuffer(m_CurrentChunk->buffer);
+            m_CurrentChunk->mappedMemory = nullptr;
+        }
     }
 }
 
 BufferChunkPtr UploadManager::GetChunk()
 {
     if (!m_CurrentChunk)
-        m_CurrentChunk = CreateChunk(m_DefaultChunkSize);
+    {
+        // XXX: Hardcoded ~300 mb staging buffer.
+        m_CurrentChunk = CreateChunk(268435456);
+    }
 
     return m_CurrentChunk;
 }

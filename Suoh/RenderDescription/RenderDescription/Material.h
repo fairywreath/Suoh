@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-constexpr u64 INVALID_TEXTURE = 0xFFFFFFFFFFFFFFFF;
+constexpr u64 INVALID_TEXTURE = 0xFFFFFFFF;
 
 enum class MaterialFlags : u8
 {

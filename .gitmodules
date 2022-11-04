@@ -10,3 +10,12 @@
 [submodule "Suoh/Vendor/glslang"]
 	path = Suoh/Vendor/glslang
 	url = git@github.com:KhronosGroup/glslang.git
+[submodule "Suoh/Vendor/assimp"]
+	path = Suoh/Vendor/assimp
+	url = git@github.com:assimp/assimp.git
+[submodule "Suoh/Vendor/meshoptimizer"]
+	path = Suoh/Vendor/meshoptimizer
+	url = git@github.com:zeux/meshoptimizer.git
+[submodule "Suoh/Vendor/gli"]
+	path = Suoh/Vendor/gli
+	url = git@github.com:g-truc/gli.git

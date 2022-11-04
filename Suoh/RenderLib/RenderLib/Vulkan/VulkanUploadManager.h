@@ -12,8 +12,6 @@ namespace RenderLib
 namespace Vulkan
 {
 
-static constexpr auto C_DEFAULT_UPLOAD_CHUNK_SIZE = 4096;
-
 struct BufferChunk
 {
     BufferHandle buffer;
@@ -31,8 +29,7 @@ class VulkanDevice;
 class UploadManager
 {
 public:
-    UploadManager(VulkanDevice* pDevice, u64 defaultChunkSize = C_DEFAULT_UPLOAD_CHUNK_SIZE)
-        : m_pDevice(pDevice), m_DefaultChunkSize(defaultChunkSize)
+    explicit UploadManager(VulkanDevice* pDevice) : m_pDevice(pDevice)
     {
     }
     ~UploadManager();
@@ -46,8 +43,6 @@ private:
     VulkanDevice* m_pDevice;
 
     BufferChunkPtr m_CurrentChunk;
-
-    u64 m_DefaultChunkSize{0};
 };
 
 } // namespace Vulkan
