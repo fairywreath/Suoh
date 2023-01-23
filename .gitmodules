@@ -1,0 +1,6 @@
+[submodule "Source/External/glm"]
+	path = Source/External/glm
+	url = git@github.com:g-truc/glm.git
+[submodule "Source/External/VulkanMemoryAllocator"]
+	path = Source/External/VulkanMemoryAllocator
+	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
